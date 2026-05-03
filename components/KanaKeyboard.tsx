@@ -82,73 +82,75 @@ export function KanaKeyboard({
 
   return (
     <View style={[styles.keyboard, compact && styles.compactKeyboard]} accessibilityLabel="Kana keyboard">
-      <View style={[styles.pager, compact && styles.compactPager]}>
-        <Pressable
-          onPress={goToPreviousPage}
-          disabled={pageIndex === 0}
-          style={[styles.pageButton, pageIndex === 0 && styles.inactivePageButton]}
-        >
-          <Text style={styles.pageButtonText}>‹</Text>
-        </Pressable>
-        <View style={styles.dots} accessibilityLabel={`Kana page ${pageIndex + 1} of ${pages.length}`}>
-          {pages.map((_, index) => (
-            <View key={index} style={[styles.dot, index === pageIndex && styles.activeDot]} />
-          ))}
+      <View style={styles.kanaControls}>
+        <View style={[styles.pager, compact && styles.compactPager]}>
+          <Pressable
+            onPress={goToPreviousPage}
+            disabled={pageIndex === 0}
+            style={[styles.pageButton, pageIndex === 0 && styles.inactivePageButton]}
+          >
+            <Text style={styles.pageButtonText}>‹</Text>
+          </Pressable>
+          <View style={styles.dots} accessibilityLabel={`Kana page ${pageIndex + 1} of ${pages.length}`}>
+            {pages.map((_, index) => (
+              <View key={index} style={[styles.dot, index === pageIndex && styles.activeDot]} />
+            ))}
+          </View>
+          <Pressable
+            onPress={goToNextPage}
+            disabled={pageIndex === pages.length - 1}
+            style={[styles.pageButton, pageIndex === pages.length - 1 && styles.inactivePageButton]}
+          >
+            <Text style={styles.pageButtonText}>›</Text>
+          </Pressable>
         </View>
-        <Pressable
-          onPress={goToNextPage}
-          disabled={pageIndex === pages.length - 1}
-          style={[styles.pageButton, pageIndex === pages.length - 1 && styles.inactivePageButton]}
-        >
-          <Text style={styles.pageButtonText}>›</Text>
-        </Pressable>
-      </View>
 
-      <View style={[styles.kanaPage, compact && styles.compactKanaPage]} {...panResponder.panHandlers}>
-        {currentPage.map((row, rowIndex) => (
-          <View key={`${pageIndex}-${rowIndex}`} style={[styles.row, compact && styles.compactRow]}>
-            {row.map((kana) => {
-              const statusStyle = keyStatusStyles[keyStatuses[kana]];
-              const romaji = getKanaRomaji(kana);
+        <View style={[styles.kanaPage, compact && styles.compactKanaPage]} {...panResponder.panHandlers}>
+          {currentPage.map((row, rowIndex) => (
+            <View key={`${pageIndex}-${rowIndex}`} style={[styles.row, compact && styles.compactRow]}>
+              {row.map((kana) => {
+                const statusStyle = keyStatusStyles[keyStatuses[kana]];
+                const romaji = getKanaRomaji(kana);
 
-              return (
-                <Pressable
-                  key={kana}
-                  onPress={() => onKanaPress(kana)}
-                  disabled={disabled}
-                  style={({ pressed }) => [
-                    styles.key,
-                    compact && styles.compactKey,
-                    statusStyle && { backgroundColor: statusStyle.backgroundColor },
-                    disabled && styles.disabledKey,
-                    pressed && !disabled && styles.pressedKey
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.keyKana,
-                      compact && styles.compactKeyKana,
-                      statusStyle && { color: statusStyle.color }
+                return (
+                  <Pressable
+                    key={kana}
+                    onPress={() => onKanaPress(kana)}
+                    disabled={disabled}
+                    style={({ pressed }) => [
+                      styles.key,
+                      compact && styles.compactKey,
+                      statusStyle && { backgroundColor: statusStyle.backgroundColor },
+                      disabled && styles.disabledKey,
+                      pressed && !disabled && styles.pressedKey
                     ]}
                   >
-                    {kana}
-                  </Text>
-                  {showRomaji ? (
                     <Text
                       style={[
-                        styles.keyRomaji,
-                        compact && styles.compactKeyRomaji,
+                        styles.keyKana,
+                        compact && styles.compactKeyKana,
                         statusStyle && { color: statusStyle.color }
                       ]}
                     >
-                      {romaji}
+                      {kana}
                     </Text>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
-        ))}
+                    {showRomaji ? (
+                      <Text
+                        style={[
+                          styles.keyRomaji,
+                          compact && styles.compactKeyRomaji,
+                          statusStyle && { color: statusStyle.color }
+                        ]}
+                      >
+                        {romaji}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+        </View>
       </View>
 
       <View style={[styles.actionRow, compact && styles.compactActionRow]}>
@@ -184,20 +186,23 @@ export function KanaKeyboard({
 const styles = StyleSheet.create({
   keyboard: {
     width: "100%",
-    gap: 7
+    gap: 4
   },
   compactKeyboard: {
-    gap: 5
+    gap: 3
+  },
+  kanaControls: {
+    gap: 4
   },
   pager: {
-    minHeight: 28,
+    minHeight: 24,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 16
   },
   compactPager: {
-    minHeight: 24
+    minHeight: 22
   },
   pageButton: {
     width: 32,
@@ -232,12 +237,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#2f4f4a"
   },
   kanaPage: {
-    minHeight: 145,
+    minHeight: 136,
     justifyContent: "center",
     gap: 7
   },
   compactKanaPage: {
-    minHeight: 130,
+    minHeight: 124,
     gap: 5
   },
   row: {
@@ -291,23 +296,25 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 10,
-    paddingTop: 4
+    gap: 12,
+    paddingTop: 2,
+    paddingBottom: 0
   },
   compactActionRow: {
-    paddingTop: 2
+    paddingTop: 2,
+    paddingBottom: 0
   },
   actionKey: {
-    minWidth: 104,
-    height: 38,
+    minWidth: 116,
+    height: 48,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#2f4f4a"
   },
   compactActionKey: {
-    height: 36,
-    minWidth: 104
+    height: 46,
+    minWidth: 112
   },
   actionText: {
     color: "#ffffff",

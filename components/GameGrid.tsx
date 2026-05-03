@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, StyleSheet, Text, View } from "react-native";
 import { TileStatus } from "@/types/game";
 import { getKanaRomaji } from "@/utils/kanaRomaji";
 
@@ -9,6 +10,7 @@ type GameGridProps = {
   currentGuess: string;
   results: TileStatus[][];
   showRomaji: boolean;
+  shakeTrigger: number;
   tileSize?: number;
 };
 
@@ -26,16 +28,46 @@ export function GameGrid({
   currentGuess,
   results,
   showRomaji,
+  shakeTrigger,
   tileSize = 56
 }: GameGridProps) {
+  const shakeValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (shakeTrigger === 0) {
+      return;
+    }
+
+    shakeValue.setValue(0);
+    Animated.sequence([
+      Animated.timing(shakeValue, { toValue: 1, duration: 45, useNativeDriver: true }),
+      Animated.timing(shakeValue, { toValue: -1, duration: 45, useNativeDriver: true }),
+      Animated.timing(shakeValue, { toValue: 1, duration: 45, useNativeDriver: true }),
+      Animated.timing(shakeValue, { toValue: -1, duration: 45, useNativeDriver: true }),
+      Animated.timing(shakeValue, { toValue: 0, duration: 45, useNativeDriver: true })
+    ]).start();
+  }, [shakeTrigger, shakeValue]);
+
+  const shakeStyle = {
+    transform: [
+      {
+        translateX: shakeValue.interpolate({
+          inputRange: [-1, 0, 1],
+          outputRange: [-9, 0, 9]
+        })
+      }
+    ]
+  };
+
   return (
     <View style={styles.grid} accessibilityLabel="Guess grid">
       {Array.from({ length: maxGuesses }).map((_, rowIndex) => {
         const isCurrentRow = rowIndex === guesses.length;
         const rowChars = Array.from(isCurrentRow ? currentGuess : guesses[rowIndex] ?? "");
+        const RowContainer = isCurrentRow ? Animated.View : View;
 
         return (
-          <View key={rowIndex} style={styles.row}>
+          <RowContainer key={rowIndex} style={[styles.row, isCurrentRow && shakeStyle]}>
             {Array.from({ length: answerLength }).map((__, columnIndex) => {
               const status = results[rowIndex]?.[columnIndex] ?? "empty";
               const colors = statusStyles[status];
@@ -62,7 +94,7 @@ export function GameGrid({
                 </View>
               );
             })}
-          </View>
+          </RowContainer>
         );
       })}
     </View>

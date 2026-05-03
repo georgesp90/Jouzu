@@ -8,6 +8,7 @@ export type WordEntry = {
   category: string;
   definition: string;
   jlpt: JLPTLevel;
+  hintEmoji?: string;
 };
 
 export type TileStatus = "correct" | "present" | "absent" | "empty";

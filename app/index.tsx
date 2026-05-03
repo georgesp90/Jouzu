@@ -11,7 +11,8 @@ import {
 import { GameGrid } from "@/components/GameGrid";
 import { KanaKeyboard } from "@/components/KanaKeyboard";
 import { ResultModal } from "@/components/ResultModal";
-import { DailyProgress, TileStatus } from "@/types/game";
+import { wordPools, words } from "@/data/words";
+import { DailyProgress, JLPTLevel, TileStatus, WordEntry } from "@/types/game";
 import { evaluateGuess } from "@/utils/evaluateGuess";
 import { getDailyPuzzle } from "@/utils/getDailyPuzzle";
 import { getPuzzleNumber, getTodayKey } from "@/utils/getWordOfTheDay";
@@ -23,9 +24,18 @@ import {
 } from "@/utils/storage";
 
 const KANA_ONLY = /^[\u3040-\u309f]+$/;
+type GameMode = "daily" | "unlimited";
 
 function getMaxGuesses(answerLength: number): number {
   return answerLength === 2 ? 4 : 6;
+}
+
+function selectRandomWord(level: JLPTLevel, previousWordId?: string): WordEntry {
+  const pool = wordPools[level].length > 0 ? wordPools[level] : wordPools.N5;
+  const availableWords =
+    previousWordId && pool.length > 1 ? pool.filter((word) => word.id !== previousWordId) : pool;
+
+  return availableWords[Math.floor(Math.random() * availableWords.length)];
 }
 
 export default function GameScreen() {
@@ -33,7 +43,10 @@ export default function GameScreen() {
   const todayKey = useMemo(() => getTodayKey(), []);
   const puzzleNumber = useMemo(() => getPuzzleNumber(), []);
   const dailyPuzzle = useMemo(() => getDailyPuzzle(), []);
-  const word = dailyPuzzle.word;
+  const [gameMode, setGameMode] = useState<GameMode>("daily");
+  const [selectedJLPTLevel, setSelectedJLPTLevel] = useState<JLPTLevel>("N5");
+  const [unlimitedWord, setUnlimitedWord] = useState(() => selectRandomWord("N5"));
+  const word = gameMode === "daily" ? dailyPuzzle.word : unlimitedWord;
   const answerChars = useMemo(() => Array.from(word.hiragana), [word.hiragana]);
 
   const [guesses, setGuesses] = useState<string[]>([]);
@@ -44,10 +57,15 @@ export default function GameScreen() {
   const [loading, setLoading] = useState(true);
   const [showResult, setShowResult] = useState(false);
   const [showRomaji, setShowRomaji] = useState(true);
+  const [wordsSolved, setWordsSolved] = useState(0);
+  const [wordsAttempted, setWordsAttempted] = useState(0);
+  const [shakeTrigger, setShakeTrigger] = useState(0);
+  const validWords = useMemo(() => new Set(words.map((entry) => entry.hiragana)), []);
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
   const maxTileSize = maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48;
-  const estimatedFixedHeight = showRomaji ? (isShortScreen ? 420 : 450) : isShortScreen ? 380 : 410;
+  const baseFixedHeight = showRomaji ? (isShortScreen ? 470 : 500) : isShortScreen ? 430 : 460;
+  const estimatedFixedHeight = baseFixedHeight + (gameMode === "unlimited" ? 112 : 0);
   const verticalTileLimit = Math.floor(
     (height - estimatedFixedHeight - (maxGuesses - 1) * 8) / maxGuesses
   );
@@ -68,6 +86,15 @@ export default function GameScreen() {
     [todayKey, word.id]
   );
 
+  const resetBoard = () => {
+    setGuesses([]);
+    setResults([]);
+    setCurrentGuess("");
+    setSolved(false);
+    setCompleted(false);
+    setShowResult(false);
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -85,7 +112,7 @@ export default function GameScreen() {
           setShowRomaji(savedShowRomaji);
         }
 
-        if (saved?.date === todayKey && saved.wordId === word.id) {
+        if (saved?.date === todayKey && saved.wordId === dailyPuzzle.word.id) {
           setGuesses(saved.guesses);
           setResults(saved.results);
           setSolved(saved.solved);
@@ -104,9 +131,50 @@ export default function GameScreen() {
     return () => {
       mounted = false;
     };
-  }, [todayKey, word.id]);
+  }, [dailyPuzzle.word.id, todayKey]);
+
+  const startUnlimitedWord = (level = selectedJLPTLevel) => {
+    resetBoard();
+    setUnlimitedWord((currentWord) => selectRandomWord(level, currentWord.id));
+  };
+
+  const skipUnlimitedWord = () => {
+    if (!completed) {
+      setWordsAttempted((value) => value + 1);
+    }
+
+    startUnlimitedWord();
+  };
+
+  const handleGameModeChange = (nextGameMode: GameMode) => {
+    setGameMode(nextGameMode);
+    resetBoard();
+
+    if (nextGameMode === "daily") {
+      void loadProgress().then((saved) => {
+        if (saved?.date === todayKey && saved.wordId === dailyPuzzle.word.id) {
+          setGuesses(saved.guesses);
+          setResults(saved.results);
+          setSolved(saved.solved);
+          setCompleted(saved.completed);
+          setShowResult(saved.completed);
+        }
+      });
+    } else {
+      setUnlimitedWord((currentWord) => selectRandomWord(selectedJLPTLevel, currentWord.id));
+    }
+  };
+
+  const handleJLPTLevelChange = (nextLevel: JLPTLevel) => {
+    setSelectedJLPTLevel(nextLevel);
+    resetBoard();
+    setUnlimitedWord((currentWord) => selectRandomWord(nextLevel, currentWord.id));
+  };
 
   const showHint = guesses.length >= 2 && !solved;
+  const hintLabel = word.hintEmoji
+    ? `Hint: ${word.hintEmoji} ${word.category}`
+    : `Hint: ${word.category}`;
   const keyStatuses = useMemo(() => {
     const priority: Record<TileStatus, number> = {
       empty: 0,
@@ -169,6 +237,11 @@ export default function GameScreen() {
       return;
     }
 
+    if (!validWords.has(currentGuess)) {
+      setShakeTrigger((value) => value + 1);
+      return;
+    }
+
     const evaluated = evaluateGuess(currentGuess, word.hiragana);
     const nextGuesses = [...guesses, currentGuess];
     const nextResults = [...results, evaluated];
@@ -181,12 +254,22 @@ export default function GameScreen() {
     setCompleted(nextCompleted);
     setCurrentGuess("");
 
-    await persistProgress({
-      guesses: nextGuesses,
-      results: nextResults,
-      solved: nextSolved,
-      completed: nextCompleted
-    });
+    if (gameMode === "daily") {
+      await persistProgress({
+        guesses: nextGuesses,
+        results: nextResults,
+        solved: nextSolved,
+        completed: nextCompleted
+      });
+    } else {
+      if (nextCompleted) {
+        setWordsAttempted((value) => value + 1);
+
+        if (nextSolved) {
+          setWordsSolved((value) => value + 1);
+        }
+      }
+    }
 
     if (nextCompleted) {
       setShowResult(true);
@@ -215,15 +298,84 @@ export default function GameScreen() {
               </Text>
             </Pressable>
           </View>
+          <View style={styles.modeControl} accessibilityLabel="Game mode">
+            <Pressable
+              onPress={() => handleGameModeChange("daily")}
+              style={[styles.modeSegment, gameMode === "daily" && styles.activeSegment]}
+            >
+              <Text style={[styles.modeSegmentText, gameMode === "daily" && styles.activeSegmentText]}>
+                Daily
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleGameModeChange("unlimited")}
+              style={[styles.modeSegment, gameMode === "unlimited" && styles.activeSegment]}
+            >
+              <Text
+                style={[styles.modeSegmentText, gameMode === "unlimited" && styles.activeSegmentText]}
+              >
+                Practice
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={[styles.header, isShortScreen && styles.shortHeader]}>
-          <Text style={[styles.title, isShortScreen && styles.shortTitle]}>Jozu</Text>
-          <Text style={styles.subtitle}>2 minutes of Japanese a day</Text>
+          <Text
+            style={[
+              styles.title,
+              gameMode === "unlimited" && styles.practiceTitle,
+              isShortScreen && styles.shortTitle
+            ]}
+          >
+            {gameMode === "daily" ? "Jozu" : "Unlimited Practice"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {gameMode === "daily" ? "2 minutes of Japanese a day" : "Train at your level"}
+          </Text>
           <Text style={styles.kicker}>
-            Daily Hiragana Puzzle #{puzzleNumber} · {dailyPuzzle.jlptLevel}
+            {gameMode === "daily"
+              ? `Daily Hiragana Puzzle #${puzzleNumber} · ${dailyPuzzle.jlptLevel}`
+              : `Current word · ${word.jlpt}`}
           </Text>
         </View>
+
+        {gameMode === "unlimited" ? (
+          <View style={styles.practicePanel}>
+            <View style={styles.levelSelector} accessibilityLabel="JLPT level">
+              {(["N5", "N4", "N3"] as JLPTLevel[]).map((level) => (
+                <Pressable
+                  key={level}
+                  onPress={() => handleJLPTLevelChange(level)}
+                  style={[styles.levelButton, selectedJLPTLevel === level && styles.activeLevelButton]}
+                >
+                  <Text
+                    style={[
+                      styles.levelButtonText,
+                      selectedJLPTLevel === level && styles.activeLevelButtonText
+                    ]}
+                  >
+                    {level}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.practiceActions}>
+              <Pressable onPress={() => startUnlimitedWord()} style={styles.practiceButton}>
+                <Text style={styles.practiceButtonText}>Next Word</Text>
+              </Pressable>
+              <Pressable onPress={skipUnlimitedWord} style={styles.skipButton}>
+                <Text style={styles.skipButtonText}>Skip</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.practiceStats}>
+              Solved {wordsSolved} · Accuracy{" "}
+              {wordsAttempted > 0
+                ? `${Math.round((wordsSolved / wordsAttempted) * 100)}%`
+                : "0%"}
+            </Text>
+          </View>
+        ) : null}
 
         <GameGrid
           answerLength={answerChars.length}
@@ -232,12 +384,19 @@ export default function GameScreen() {
           currentGuess={currentGuess}
           results={results}
           showRomaji={showRomaji}
+          shakeTrigger={shakeTrigger}
           tileSize={tileSize}
         />
 
         <View style={[styles.hintBox, isShortScreen && styles.shortHintBox]}>
           <Text style={styles.hintText}>
-            {showHint ? `Hint: ${word.category}` : completed ? "Come back tomorrow." : " "}
+            {showHint
+              ? hintLabel
+              : completed
+                ? gameMode === "daily"
+                  ? "Come back tomorrow."
+                  : "Tap Next Word to keep practicing."
+                : " "}
           </Text>
         </View>
 
@@ -275,21 +434,23 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: 10,
+    gap: 7,
     paddingHorizontal: 18,
     paddingTop: 8,
-    paddingBottom: 10
+    paddingBottom: 4
   },
   shortContainer: {
-    gap: 6,
+    gap: 4,
     paddingTop: 4,
-    paddingBottom: 6
+    paddingBottom: 2
   },
   topBar: {
     width: "100%",
     minHeight: 38,
-    alignItems: "flex-start",
-    justifyContent: "center"
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8
   },
   segmentedControl: {
     flexDirection: "row",
@@ -317,6 +478,26 @@ const styles = StyleSheet.create({
   activeSegmentText: {
     color: "#ffffff"
   },
+  modeControl: {
+    flexDirection: "row",
+    borderWidth: 2,
+    borderColor: "#ded6ca",
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#fffdf8"
+  },
+  modeSegment: {
+    minWidth: 64,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 9
+  },
+  modeSegmentText: {
+    color: "#7b6f60",
+    fontSize: 13,
+    fontWeight: "800"
+  },
   header: {
     alignItems: "center",
     gap: 3,
@@ -331,6 +512,10 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: "900",
     lineHeight: 38
+  },
+  practiceTitle: {
+    fontSize: 30,
+    lineHeight: 34
   },
   shortTitle: {
     fontSize: 30,
@@ -347,15 +532,82 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     paddingTop: 2
   },
-  hintBox: {
-    minHeight: 20,
+  practicePanel: {
+    width: "100%",
+    alignItems: "center",
+    gap: 5
+  },
+  levelSelector: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8
+  },
+  levelButton: {
+    minWidth: 56,
+    height: 30,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 2
+    backgroundColor: "#e9e0d2"
+  },
+  activeLevelButton: {
+    backgroundColor: "#2f4f4a"
+  },
+  levelButtonText: {
+    color: "#5d5448",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  activeLevelButtonText: {
+    color: "#ffffff"
+  },
+  practiceActions: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8
+  },
+  practiceButton: {
+    minWidth: 118,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2f4f4a"
+  },
+  practiceButtonText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  skipButton: {
+    minWidth: 76,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#cbbfad",
+    backgroundColor: "#fffdf8"
+  },
+  skipButtonText: {
+    color: "#2f4f4a",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  practiceStats: {
+    color: "#817565",
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  hintBox: {
+    minHeight: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -2
   },
   shortHintBox: {
-    minHeight: 18,
-    marginTop: 0
+    minHeight: 14,
+    marginTop: -3
   },
   hintText: {
     color: "#5d5448",
