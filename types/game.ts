@@ -20,3 +20,9 @@ export type DailyProgress = {
   solved: boolean;
   completed: boolean;
 };
+
+export type DailyPuzzle = {
+  date: string;
+  word: WordEntry;
+  jlptLevel: JLPTLevel;
+};

@@ -11,10 +11,10 @@ import {
 import { GameGrid } from "@/components/GameGrid";
 import { KanaKeyboard } from "@/components/KanaKeyboard";
 import { ResultModal } from "@/components/ResultModal";
-import { words } from "@/data/words";
 import { DailyProgress, TileStatus } from "@/types/game";
 import { evaluateGuess } from "@/utils/evaluateGuess";
-import { getPuzzleNumber, getTodayKey, getWordOfTheDay } from "@/utils/getWordOfTheDay";
+import { getDailyPuzzle } from "@/utils/getDailyPuzzle";
+import { getPuzzleNumber, getTodayKey } from "@/utils/getWordOfTheDay";
 import {
   loadProgress,
   loadShowRomajiPreference,
@@ -32,7 +32,8 @@ export default function GameScreen() {
   const { height, width } = useWindowDimensions();
   const todayKey = useMemo(() => getTodayKey(), []);
   const puzzleNumber = useMemo(() => getPuzzleNumber(), []);
-  const word = useMemo(() => getWordOfTheDay(words), []);
+  const dailyPuzzle = useMemo(() => getDailyPuzzle(), []);
+  const word = dailyPuzzle.word;
   const answerChars = useMemo(() => Array.from(word.hiragana), [word.hiragana]);
 
   const [guesses, setGuesses] = useState<string[]>([]);
@@ -219,7 +220,9 @@ export default function GameScreen() {
         <View style={[styles.header, isShortScreen && styles.shortHeader]}>
           <Text style={[styles.title, isShortScreen && styles.shortTitle]}>Jozu</Text>
           <Text style={styles.subtitle}>2 minutes of Japanese a day</Text>
-          <Text style={styles.kicker}>Daily Hiragana Puzzle #{puzzleNumber}</Text>
+          <Text style={styles.kicker}>
+            Daily Hiragana Puzzle #{puzzleNumber} · {dailyPuzzle.jlptLevel}
+          </Text>
         </View>
 
         <GameGrid

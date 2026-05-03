@@ -90,5 +90,101 @@ export const words: WordEntry[] = [
     category: "person",
     definition: "a close companion",
     jlpt: "N5"
+  },
+  {
+    id: "kaigi-001",
+    hiragana: "かいぎ",
+    romaji: "kaigi",
+    english: "meeting",
+    category: "work",
+    definition: "a gathering to discuss plans or decisions",
+    jlpt: "N4"
+  },
+  {
+    id: "setsumei-001",
+    hiragana: "せつめい",
+    romaji: "setsumei",
+    english: "explanation",
+    category: "communication",
+    definition: "a statement that makes something clear",
+    jlpt: "N4"
+  },
+  {
+    id: "tokubetsu-001",
+    hiragana: "とくべつ",
+    romaji: "tokubetsu",
+    english: "special",
+    category: "adjective",
+    definition: "different from what is usual or ordinary",
+    jlpt: "N4"
+  },
+  {
+    id: "junbi-001",
+    hiragana: "じゅんび",
+    romaji: "junbi",
+    english: "preparation",
+    category: "action",
+    definition: "getting ready for something",
+    jlpt: "N4"
+  },
+  {
+    id: "keiken-001",
+    hiragana: "けいけん",
+    romaji: "keiken",
+    english: "experience",
+    category: "life",
+    definition: "knowledge gained by doing or seeing something",
+    jlpt: "N4"
+  },
+  {
+    id: "kankei-001",
+    hiragana: "かんけい",
+    romaji: "kankei",
+    english: "relationship",
+    category: "concept",
+    definition: "a connection between people or things",
+    jlpt: "N3"
+  },
+  {
+    id: "jissai-001",
+    hiragana: "じっさい",
+    romaji: "jissai",
+    english: "actually",
+    category: "adverb",
+    definition: "in fact or in reality",
+    jlpt: "N3"
+  },
+  {
+    id: "gijutsu-001",
+    hiragana: "ぎじゅつ",
+    romaji: "gijutsu",
+    english: "technology",
+    category: "work",
+    definition: "practical knowledge or skill used to make things",
+    jlpt: "N3"
+  },
+  {
+    id: "kakunin-001",
+    hiragana: "かくにん",
+    romaji: "kakunin",
+    english: "confirmation",
+    category: "communication",
+    definition: "checking that something is correct",
+    jlpt: "N3"
+  },
+  {
+    id: "seikou-001",
+    hiragana: "せいこう",
+    romaji: "seikou",
+    english: "success",
+    category: "concept",
+    definition: "achieving a goal or desired result",
+    jlpt: "N3"
   }
 ];
+
+export const wordPools = {
+  N5: words.filter((word) => word.jlpt === "N5"),
+  N4: words.filter((word) => word.jlpt === "N4"),
+  N3: words.filter((word) => word.jlpt === "N3")
+};
