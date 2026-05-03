@@ -11,7 +11,8 @@ import {
 import { GameGrid } from "@/components/GameGrid";
 import { KanaKeyboard } from "@/components/KanaKeyboard";
 import { ResultModal } from "@/components/ResultModal";
-import { wordPools, words } from "@/data/words";
+import { acceptedGuesses } from "@/data/acceptedGuesses";
+import { wordPools } from "@/data/words";
 import { DailyProgress, JLPTLevel, TileStatus, WordEntry } from "@/types/game";
 import { evaluateGuess } from "@/utils/evaluateGuess";
 import { getDailyPuzzle } from "@/utils/getDailyPuzzle";
@@ -30,12 +31,13 @@ function getMaxGuesses(answerLength: number): number {
   return answerLength === 2 ? 4 : 6;
 }
 
-function selectRandomWord(level: JLPTLevel, previousWordId?: string): WordEntry {
+function selectRandomWord(level: JLPTLevel, excludedWordIds: string[] = []): WordEntry {
   const pool = wordPools[level].length > 0 ? wordPools[level] : wordPools.N5;
-  const availableWords =
-    previousWordId && pool.length > 1 ? pool.filter((word) => word.id !== previousWordId) : pool;
+  const excludedIds = new Set(excludedWordIds);
+  const availableWords = pool.filter((word) => !excludedIds.has(word.id));
+  const candidatePool = availableWords.length > 0 ? availableWords : pool;
 
-  return availableWords[Math.floor(Math.random() * availableWords.length)];
+  return candidatePool[Math.floor(Math.random() * candidatePool.length)];
 }
 
 export default function GameScreen() {
@@ -46,6 +48,11 @@ export default function GameScreen() {
   const [gameMode, setGameMode] = useState<GameMode>("daily");
   const [selectedJLPTLevel, setSelectedJLPTLevel] = useState<JLPTLevel>("N5");
   const [unlimitedWord, setUnlimitedWord] = useState(() => selectRandomWord("N5"));
+  const [seenPracticeWordIds, setSeenPracticeWordIds] = useState<Record<JLPTLevel, string[]>>({
+    N5: [],
+    N4: [],
+    N3: []
+  });
   const word = gameMode === "daily" ? dailyPuzzle.word : unlimitedWord;
   const answerChars = useMemo(() => Array.from(word.hiragana), [word.hiragana]);
 
@@ -60,7 +67,6 @@ export default function GameScreen() {
   const [wordsSolved, setWordsSolved] = useState(0);
   const [wordsAttempted, setWordsAttempted] = useState(0);
   const [shakeTrigger, setShakeTrigger] = useState(0);
-  const validWords = useMemo(() => new Set(words.map((entry) => entry.hiragana)), []);
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
   const maxTileSize = maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48;
@@ -93,6 +99,28 @@ export default function GameScreen() {
     setSolved(false);
     setCompleted(false);
     setShowResult(false);
+  };
+
+  const advancePracticeWord = (level: JLPTLevel, currentWordId?: string) => {
+    setSeenPracticeWordIds((seenIdsByLevel) => {
+      const pool = wordPools[level].length > 0 ? wordPools[level] : wordPools.N5;
+      const poolIds = new Set(pool.map((entry) => entry.id));
+      const seenIds = seenIdsByLevel[level].filter((id) => poolIds.has(id));
+      const cycleIsComplete = seenIds.length >= pool.length;
+      const excludedWordIds = cycleIsComplete
+        ? currentWordId
+          ? [currentWordId]
+          : []
+        : seenIds;
+      const nextWord = selectRandomWord(level, excludedWordIds);
+
+      setUnlimitedWord(nextWord);
+
+      return {
+        ...seenIdsByLevel,
+        [level]: cycleIsComplete ? [nextWord.id] : [...seenIds, nextWord.id]
+      };
+    });
   };
 
   useEffect(() => {
@@ -135,7 +163,7 @@ export default function GameScreen() {
 
   const startUnlimitedWord = (level = selectedJLPTLevel) => {
     resetBoard();
-    setUnlimitedWord((currentWord) => selectRandomWord(level, currentWord.id));
+    advancePracticeWord(level, unlimitedWord.id);
   };
 
   const skipUnlimitedWord = () => {
@@ -161,14 +189,14 @@ export default function GameScreen() {
         }
       });
     } else {
-      setUnlimitedWord((currentWord) => selectRandomWord(selectedJLPTLevel, currentWord.id));
+      advancePracticeWord(selectedJLPTLevel, unlimitedWord.id);
     }
   };
 
   const handleJLPTLevelChange = (nextLevel: JLPTLevel) => {
     setSelectedJLPTLevel(nextLevel);
     resetBoard();
-    setUnlimitedWord((currentWord) => selectRandomWord(nextLevel, currentWord.id));
+    advancePracticeWord(nextLevel, unlimitedWord.id);
   };
 
   const showHint = guesses.length >= 2 && !solved;
@@ -236,7 +264,7 @@ export default function GameScreen() {
       return;
     }
 
-    if (!validWords.has(currentGuess)) {
+    if (!acceptedGuesses.has(currentGuess)) {
       setShakeTrigger((value) => value + 1);
       return;
     }

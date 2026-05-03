@@ -22,6 +22,16 @@ export const words: WordEntry[] = [
     hintEmoji: "🐶"
   },
   {
+    id: "risu-001",
+    hiragana: "りす",
+    romaji: "risu",
+    english: "squirrel",
+    category: "animal",
+    definition: "a small tree-climbing animal with a bushy tail",
+    jlpt: "N5",
+    hintEmoji: "🐿️"
+  },
+  {
     id: "mizu-001",
     hiragana: "みず",
     romaji: "mizu",
@@ -760,6 +770,16 @@ export const words: WordEntry[] = [
     definition: "mind, spirit, or heart",
     jlpt: "N4",
     hintEmoji: "❤️"
+  },
+  {
+    id: "genki-001",
+    hiragana: "げんき",
+    romaji: "genki",
+    english: "healthy",
+    category: "feeling",
+    definition: "healthy, energetic, or doing well",
+    jlpt: "N5",
+    hintEmoji: "💪"
   },
   {
     id: "kimochi-001",
