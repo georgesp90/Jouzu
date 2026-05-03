@@ -6,6 +6,7 @@ type ResultModalProps = {
   word: WordEntry;
   puzzleNumber: number;
   guessCount: number;
+  maxGuesses: number;
   solved: boolean;
   results: TileStatus[][];
   onClose: () => void;
@@ -26,10 +27,11 @@ function buildShareText(
   word: WordEntry,
   puzzleNumber: number,
   guessCount: number,
+  maxGuesses: number,
   solved: boolean,
   results: TileStatus[][]
 ) {
-  const score = solved ? `${guessCount}/6` : "X/6";
+  const score = solved ? `${guessCount}/${maxGuesses}` : `X/${maxGuesses}`;
   const rows = results.map((row) => row.map((status) => resultEmoji[status]).join("")).join("\n");
 
   return `Jozu Hiragana #${puzzleNumber} ${score}
@@ -45,13 +47,14 @@ export function ResultModal({
   word,
   puzzleNumber,
   guessCount,
+  maxGuesses,
   solved,
   results,
   onClose
 }: ResultModalProps) {
   const shareResult = async () => {
     await Share.share({
-      message: buildShareText(word, puzzleNumber, guessCount, solved, results)
+      message: buildShareText(word, puzzleNumber, guessCount, maxGuesses, solved, results)
     });
   };
 
@@ -70,7 +73,7 @@ export function ResultModal({
             <Text style={styles.infoText}>JLPT: {word.jlpt}</Text>
             <Text style={styles.infoText}>Definition: {word.definition}</Text>
             <Text style={styles.infoText}>
-              Guesses: {solved ? guessCount : "X"}/6
+              Guesses: {solved ? guessCount : "X"}/{maxGuesses}
             </Text>
           </View>
 

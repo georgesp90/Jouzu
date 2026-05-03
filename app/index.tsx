@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -14,10 +15,18 @@ import { words } from "@/data/words";
 import { DailyProgress, TileStatus } from "@/types/game";
 import { evaluateGuess } from "@/utils/evaluateGuess";
 import { getPuzzleNumber, getTodayKey, getWordOfTheDay } from "@/utils/getWordOfTheDay";
-import { loadProgress, saveProgress } from "@/utils/storage";
+import {
+  loadProgress,
+  loadShowRomajiPreference,
+  saveProgress,
+  saveShowRomajiPreference
+} from "@/utils/storage";
 
-const MAX_GUESSES = 6;
 const KANA_ONLY = /^[\u3040-\u309f]+$/;
+
+function getMaxGuesses(answerLength: number): number {
+  return answerLength === 2 ? 4 : 6;
+}
 
 export default function GameScreen() {
   const { height, width } = useWindowDimensions();
@@ -33,9 +42,19 @@ export default function GameScreen() {
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showResult, setShowResult] = useState(false);
+  const [showRomaji, setShowRomaji] = useState(true);
   const isShortScreen = height < 720;
-  const maxTileSize = isShortScreen ? 54 : 62;
-  const tileSize = Math.max(44, Math.min(maxTileSize, Math.floor((width - 72) / answerChars.length)));
+  const maxGuesses = getMaxGuesses(answerChars.length);
+  const maxTileSize = maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48;
+  const estimatedFixedHeight = showRomaji ? (isShortScreen ? 420 : 450) : isShortScreen ? 380 : 410;
+  const verticalTileLimit = Math.floor(
+    (height - estimatedFixedHeight - (maxGuesses - 1) * 8) / maxGuesses
+  );
+  const horizontalTileLimit = Math.floor((width - 72) / answerChars.length);
+  const tileSize = Math.max(
+    isShortScreen ? 38 : 42,
+    Math.min(maxTileSize, horizontalTileLimit, verticalTileLimit)
+  );
 
   const persistProgress = useCallback(
     async (nextProgress: Omit<DailyProgress, "date" | "wordId">) => {
@@ -53,9 +72,16 @@ export default function GameScreen() {
 
     async function restoreProgress() {
       try {
-        const saved = await loadProgress();
+        const [saved, savedShowRomaji] = await Promise.all([
+          loadProgress(),
+          loadShowRomajiPreference()
+        ]);
         if (!mounted) {
           return;
+        }
+
+        if (savedShowRomaji !== null) {
+          setShowRomaji(savedShowRomaji);
         }
 
         if (saved?.date === todayKey && saved.wordId === word.id) {
@@ -103,6 +129,11 @@ export default function GameScreen() {
     return statuses;
   }, [guesses, results]);
 
+  const handleModeChange = (nextShowRomaji: boolean) => {
+    setShowRomaji(nextShowRomaji);
+    void saveShowRomajiPreference(nextShowRomaji);
+  };
+
   const handleKanaPress = (kana: string) => {
     if (completed || Array.from(currentGuess).length >= answerChars.length) {
       return;
@@ -141,7 +172,7 @@ export default function GameScreen() {
     const nextGuesses = [...guesses, currentGuess];
     const nextResults = [...results, evaluated];
     const nextSolved = currentGuess === word.hiragana;
-    const nextCompleted = nextSolved || nextGuesses.length === MAX_GUESSES;
+    const nextCompleted = nextSolved || nextGuesses.length === maxGuesses;
 
     setGuesses(nextGuesses);
     setResults(nextResults);
@@ -164,7 +195,28 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={[styles.container, isShortScreen && styles.shortContainer]}>
-        <View style={styles.header}>
+        <View style={styles.topBar}>
+          <View style={styles.segmentedControl} accessibilityLabel="Display mode">
+            <Pressable
+              onPress={() => handleModeChange(false)}
+              style={[styles.segment, !showRomaji && styles.activeSegment]}
+            >
+              <Text style={[styles.segmentText, !showRomaji && styles.activeSegmentText]}>
+                Kana
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleModeChange(true)}
+              style={[styles.segment, showRomaji && styles.activeSegment]}
+            >
+              <Text style={[styles.segmentText, showRomaji && styles.activeSegmentText]}>
+                Romaji
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={[styles.header, isShortScreen && styles.shortHeader]}>
           <Text style={[styles.title, isShortScreen && styles.shortTitle]}>Jozu</Text>
           <Text style={styles.subtitle}>2 minutes of Japanese a day</Text>
           <Text style={styles.kicker}>Daily Hiragana Puzzle #{puzzleNumber}</Text>
@@ -172,13 +224,15 @@ export default function GameScreen() {
 
         <GameGrid
           answerLength={answerChars.length}
+          maxGuesses={maxGuesses}
           guesses={guesses}
           currentGuess={currentGuess}
           results={results}
+          showRomaji={showRomaji}
           tileSize={tileSize}
         />
 
-        <View style={styles.hintBox}>
+        <View style={[styles.hintBox, isShortScreen && styles.shortHintBox]}>
           <Text style={styles.hintText}>
             {showHint ? `Hint: ${word.category}` : completed ? "Come back tomorrow." : " "}
           </Text>
@@ -189,7 +243,9 @@ export default function GameScreen() {
           onEnter={handleEnter}
           onDelete={handleDelete}
           keyStatuses={keyStatuses}
+          showRomaji={showRomaji}
           disabled={loading}
+          compact={isShortScreen || maxGuesses === 6}
         />
       </View>
 
@@ -198,6 +254,7 @@ export default function GameScreen() {
         word={word}
         puzzleNumber={puzzleNumber}
         guessCount={guesses.length}
+        maxGuesses={maxGuesses}
         solved={solved}
         results={results}
         onClose={() => setShowResult(false)}
@@ -214,18 +271,57 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+    justifyContent: "flex-start",
+    gap: 10,
     paddingHorizontal: 18,
-    paddingVertical: 14
+    paddingTop: 8,
+    paddingBottom: 10
   },
   shortContainer: {
-    gap: 8,
-    paddingVertical: 8
+    gap: 6,
+    paddingTop: 4,
+    paddingBottom: 6
+  },
+  topBar: {
+    width: "100%",
+    minHeight: 38,
+    alignItems: "flex-start",
+    justifyContent: "center"
+  },
+  segmentedControl: {
+    flexDirection: "row",
+    borderWidth: 2,
+    borderColor: "#ded6ca",
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#fffdf8"
+  },
+  segment: {
+    minWidth: 72,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12
+  },
+  activeSegment: {
+    backgroundColor: "#2f4f4a"
+  },
+  segmentText: {
+    color: "#7b6f60",
+    fontSize: 14,
+    fontWeight: "800"
+  },
+  activeSegmentText: {
+    color: "#ffffff"
   },
   header: {
     alignItems: "center",
-    gap: 4
+    gap: 3,
+    marginTop: 2
+  },
+  shortHeader: {
+    gap: 2,
+    marginTop: 0
   },
   title: {
     color: "#25231f",
@@ -249,9 +345,14 @@ const styles = StyleSheet.create({
     paddingTop: 2
   },
   hintBox: {
-    minHeight: 22,
+    minHeight: 20,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    marginTop: 2
+  },
+  shortHintBox: {
+    minHeight: 18,
+    marginTop: 0
   },
   hintText: {
     color: "#5d5448",

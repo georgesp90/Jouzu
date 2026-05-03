@@ -8,12 +8,17 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.georgesp9.jozuhiraganawordle",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#f7f2ea"
-      }
+      },
+      "package": "com.georgesp9.jozuhiraganawordle"
     },
     "web": {
       "bundler": "metro"
@@ -24,6 +29,18 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b42590d1-7f17-41b2-9a18-6f5a7f81d997"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b42590d1-7f17-41b2-9a18-6f5a7f81d997"
     }
   }
 }
