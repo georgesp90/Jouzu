@@ -172,9 +172,8 @@ export default function GameScreen() {
   };
 
   const showHint = guesses.length >= 2 && !solved;
-  const hintLabel = word.hintEmoji
-    ? `Hint: ${word.hintEmoji} ${word.category}`
-    : `Hint: ${word.category}`;
+  const categoryLabel = `Category: ${word.category}`;
+  const hintLabel = showHint && word.hintEmoji ? `Hint: ${word.hintEmoji}` : " ";
   const keyStatuses = useMemo(() => {
     const priority: Record<TileStatus, number> = {
       empty: 0,
@@ -389,14 +388,13 @@ export default function GameScreen() {
         />
 
         <View style={[styles.hintBox, isShortScreen && styles.shortHintBox]}>
+          <Text style={styles.categoryText}>{categoryLabel}</Text>
           <Text style={styles.hintText}>
-            {showHint
-              ? hintLabel
-              : completed
-                ? gameMode === "daily"
-                  ? "Come back tomorrow."
-                  : "Tap Next Word to keep practicing."
-                : " "}
+            {completed
+              ? gameMode === "daily"
+                ? "Come back tomorrow."
+                : "Tap Next Word to keep practicing."
+              : hintLabel}
           </Text>
         </View>
 
@@ -600,18 +598,24 @@ const styles = StyleSheet.create({
     fontWeight: "800"
   },
   hintBox: {
-    minHeight: 16,
+    minHeight: 34,
     alignItems: "center",
     justifyContent: "center",
     marginTop: -2
   },
   shortHintBox: {
-    minHeight: 14,
+    minHeight: 30,
     marginTop: -3
+  },
+  categoryText: {
+    color: "#817565",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 15
   },
   hintText: {
     color: "#5d5448",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "800"
   }
 });
