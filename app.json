@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Jozu",
+    "slug": "jozu-hiragana-wordle",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "jozu",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#f7f2ea"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

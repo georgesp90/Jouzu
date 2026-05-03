@@ -1,0 +1,251 @@
+import { useMemo, useRef, useState } from "react";
+import { PanResponder, Pressable, StyleSheet, Text, View } from "react-native";
+import { TileStatus } from "@/types/game";
+
+type KanaKeyboardProps = {
+  onKanaPress: (kana: string) => void;
+  onEnter: () => void;
+  onDelete: () => void;
+  keyStatuses?: Record<string, TileStatus>;
+  disabled?: boolean;
+};
+
+const kanaRows = [
+  ["あ", "い", "う", "え", "お"],
+  ["か", "き", "く", "け", "こ"],
+  ["が", "ぎ", "ぐ", "げ", "ご"],
+  ["さ", "し", "す", "せ", "そ"],
+  ["ざ", "じ", "ず", "ぜ", "ぞ"],
+  ["た", "ち", "つ", "て", "と"],
+  ["だ", "ぢ", "づ", "で", "ど"],
+  ["な", "に", "ぬ", "ね", "の"],
+  ["は", "ひ", "ふ", "へ", "ほ"],
+  ["ば", "び", "ぶ", "べ", "ぼ"],
+  ["ぱ", "ぴ", "ぷ", "ぺ", "ぽ"],
+  ["ま", "み", "む", "め", "も"],
+  ["や", "ゆ", "よ"],
+  ["ゃ", "ゅ", "ょ", "っ"],
+  ["ら", "り", "る", "れ", "ろ"],
+  ["わ", "を", "ん"]
+];
+
+const keyStatusStyles: Partial<Record<TileStatus, { backgroundColor: string; color: string }>> = {
+  correct: { backgroundColor: "#4f8f62", color: "#ffffff" },
+  present: { backgroundColor: "#d7aa42", color: "#ffffff" },
+  absent: { backgroundColor: "#9b9a94", color: "#ffffff" }
+};
+
+export function KanaKeyboard({
+  onKanaPress,
+  onEnter,
+  onDelete,
+  keyStatuses = {},
+  disabled
+}: KanaKeyboardProps) {
+  const pages = useMemo(() => {
+    const rowsPerPage = 4;
+    return Array.from({ length: Math.ceil(kanaRows.length / rowsPerPage) }, (_, pageIndex) =>
+      kanaRows.slice(pageIndex * rowsPerPage, pageIndex * rowsPerPage + rowsPerPage)
+    );
+  }, []);
+  const [pageIndex, setPageIndex] = useState(0);
+  const currentPage = pages[pageIndex];
+
+  const goToPreviousPage = () => {
+    setPageIndex((value) => Math.max(value - 1, 0));
+  };
+
+  const goToNextPage = () => {
+    setPageIndex((value) => Math.min(value + 1, pages.length - 1));
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 18 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx <= -36) {
+          goToNextPage();
+        }
+
+        if (gestureState.dx >= 36) {
+          goToPreviousPage();
+        }
+      }
+    })
+  ).current;
+
+  return (
+    <View style={styles.keyboard} accessibilityLabel="Kana keyboard">
+      <View style={styles.pager}>
+        <Pressable
+          onPress={goToPreviousPage}
+          disabled={pageIndex === 0}
+          style={[styles.pageButton, pageIndex === 0 && styles.inactivePageButton]}
+        >
+          <Text style={styles.pageButtonText}>‹</Text>
+        </Pressable>
+        <View style={styles.dots} accessibilityLabel={`Kana page ${pageIndex + 1} of ${pages.length}`}>
+          {pages.map((_, index) => (
+            <View key={index} style={[styles.dot, index === pageIndex && styles.activeDot]} />
+          ))}
+        </View>
+        <Pressable
+          onPress={goToNextPage}
+          disabled={pageIndex === pages.length - 1}
+          style={[styles.pageButton, pageIndex === pages.length - 1 && styles.inactivePageButton]}
+        >
+          <Text style={styles.pageButtonText}>›</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.kanaPage} {...panResponder.panHandlers}>
+        {currentPage.map((row, rowIndex) => (
+          <View key={`${pageIndex}-${rowIndex}`} style={styles.row}>
+            {row.map((kana) => {
+              const statusStyle = keyStatusStyles[keyStatuses[kana]];
+
+              return (
+                <Pressable
+                  key={kana}
+                  onPress={() => onKanaPress(kana)}
+                  disabled={disabled}
+                  style={({ pressed }) => [
+                    styles.key,
+                    statusStyle && { backgroundColor: statusStyle.backgroundColor },
+                    disabled && styles.disabledKey,
+                    pressed && !disabled && styles.pressedKey
+                  ]}
+                >
+                  <Text style={[styles.keyText, statusStyle && { color: statusStyle.color }]}>
+                    {kana}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.actionRow}>
+        <Pressable
+          onPress={onEnter}
+          disabled={disabled}
+          style={({ pressed }) => [
+            styles.actionKey,
+            disabled && styles.disabledKey,
+            pressed && !disabled && styles.pressedKey
+          ]}
+        >
+          <Text style={styles.actionText}>Enter</Text>
+        </Pressable>
+        <Pressable
+          onPress={onDelete}
+          disabled={disabled}
+          style={({ pressed }) => [
+            styles.actionKey,
+            disabled && styles.disabledKey,
+            pressed && !disabled && styles.pressedKey
+          ]}
+        >
+          <Text style={styles.actionText}>Delete</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  keyboard: {
+    width: "100%",
+    gap: 7
+  },
+  pager: {
+    minHeight: 28,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16
+  },
+  pageButton: {
+    width: 32,
+    height: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e9e0d2"
+  },
+  inactivePageButton: {
+    opacity: 0.28
+  },
+  pageButtonText: {
+    color: "#2b2a27",
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 24
+  },
+  dots: {
+    minWidth: 74,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#c9bcaa"
+  },
+  activeDot: {
+    backgroundColor: "#2f4f4a"
+  },
+  kanaPage: {
+    minHeight: 145,
+    justifyContent: "center",
+    gap: 7
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 7
+  },
+  key: {
+    width: 38,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e9e0d2"
+  },
+  keyText: {
+    color: "#2b2a27",
+    fontSize: 17,
+    fontWeight: "700"
+  },
+  pressedKey: {
+    transform: [{ scale: 0.96 }],
+    backgroundColor: "#ded1bf"
+  },
+  disabledKey: {
+    opacity: 0.45
+  },
+  actionRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+    paddingTop: 4
+  },
+  actionKey: {
+    minWidth: 104,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2f4f4a"
+  },
+  actionText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "800"
+  }
+});
