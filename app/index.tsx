@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Animated,
+  Modal,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -40,6 +42,32 @@ function selectRandomWord(level: JLPTLevel, excludedWordIds: string[] = []): Wor
   return candidatePool[Math.floor(Math.random() * candidatePool.length)];
 }
 
+function HintLine({
+  visible,
+  children,
+  style
+}: {
+  visible: boolean;
+  children: ReactNode;
+  style: object;
+}) {
+  const opacity = useMemo(() => new Animated.Value(visible ? 1 : 0), []);
+
+  useEffect(() => {
+    Animated.timing(opacity, {
+      toValue: visible ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true
+    }).start();
+  }, [opacity, visible]);
+
+  if (!visible) {
+    return null;
+  }
+
+  return <Animated.Text style={[style, { opacity }]}>{children}</Animated.Text>;
+}
+
 export default function GameScreen() {
   const { height, width } = useWindowDimensions();
   const todayKey = useMemo(() => getTodayKey(), []);
@@ -63,7 +91,11 @@ export default function GameScreen() {
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showResult, setShowResult] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [showRomaji, setShowRomaji] = useState(true);
+  const [showDefinitionHint, setShowDefinitionHint] = useState(false);
+  const [hintModeEnabled, setHintModeEnabled] = useState(false);
   const [wordsSolved, setWordsSolved] = useState(0);
   const [wordsAttempted, setWordsAttempted] = useState(0);
   const [shakeTrigger, setShakeTrigger] = useState(0);
@@ -99,6 +131,7 @@ export default function GameScreen() {
     setSolved(false);
     setCompleted(false);
     setShowResult(false);
+    setShowDefinitionHint(false);
   };
 
   const advancePracticeWord = (level: JLPTLevel, currentWordId?: string) => {
@@ -199,9 +232,12 @@ export default function GameScreen() {
     advancePracticeWord(nextLevel, unlimitedWord.id);
   };
 
-  const showHint = guesses.length >= 2 && !solved;
+  const incorrectGuessCount = guesses.filter((guess) => guess !== word.hiragana).length;
+  const showEmojiHint = Boolean(word.hintEmoji) && incorrectGuessCount >= 2 && !solved;
+  const showDefinitionTextHint =
+    !solved && (showDefinitionHint || incorrectGuessCount >= (word.hintEmoji ? 3 : 2));
+  const canTapDefinitionHint = hintModeEnabled || incorrectGuessCount >= 2;
   const categoryLabel = `Category: ${word.category}`;
-  const hintLabel = showHint && word.hintEmoji ? `Hint: ${word.hintEmoji}` : " ";
   const keyStatuses = useMemo(() => {
     const priority: Record<TileStatus, number> = {
       empty: 0,
@@ -307,24 +343,6 @@ export default function GameScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={[styles.container, isShortScreen && styles.shortContainer]}>
         <View style={styles.topBar}>
-          <View style={styles.segmentedControl} accessibilityLabel="Display mode">
-            <Pressable
-              onPress={() => handleModeChange(false)}
-              style={[styles.segment, !showRomaji && styles.activeSegment]}
-            >
-              <Text style={[styles.segmentText, !showRomaji && styles.activeSegmentText]}>
-                Kana
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => handleModeChange(true)}
-              style={[styles.segment, showRomaji && styles.activeSegment]}
-            >
-              <Text style={[styles.segmentText, showRomaji && styles.activeSegmentText]}>
-                Romaji
-              </Text>
-            </Pressable>
-          </View>
           <View style={styles.modeControl} accessibilityLabel="Game mode">
             <Pressable
               onPress={() => handleGameModeChange("daily")}
@@ -345,6 +363,24 @@ export default function GameScreen() {
               </Text>
             </Pressable>
           </View>
+          <View style={styles.iconCluster}>
+            <Pressable
+              onPress={() => setShowHelp(true)}
+              style={styles.helpButton}
+              accessibilityRole="button"
+              accessibilityLabel="Open help"
+            >
+              <Text style={styles.helpIcon}>💡</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowSettings(true)}
+              style={styles.settingsButton}
+              accessibilityRole="button"
+              accessibilityLabel="Open settings"
+            >
+              <Text style={styles.settingsIcon}>⚙</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={[styles.header, isShortScreen && styles.shortHeader]}>
@@ -357,9 +393,6 @@ export default function GameScreen() {
           >
             {gameMode === "daily" ? "Jozu" : "Unlimited Practice"}
           </Text>
-          <Text style={styles.subtitle}>
-            {gameMode === "daily" ? "2 minutes of Japanese a day" : "Train at your level"}
-          </Text>
           <Text style={styles.kicker}>
             {gameMode === "daily"
               ? `Daily Hiragana Puzzle #${puzzleNumber} · ${dailyPuzzle.jlptLevel}`
@@ -369,28 +402,12 @@ export default function GameScreen() {
 
         {gameMode === "unlimited" ? (
           <View style={styles.practicePanel}>
-            <View style={styles.levelSelector} accessibilityLabel="JLPT level">
-              {(["N5", "N4", "N3"] as JLPTLevel[]).map((level) => (
-                <Pressable
-                  key={level}
-                  onPress={() => handleJLPTLevelChange(level)}
-                  style={[styles.levelButton, selectedJLPTLevel === level && styles.activeLevelButton]}
-                >
-                  <Text
-                    style={[
-                      styles.levelButtonText,
-                      selectedJLPTLevel === level && styles.activeLevelButtonText
-                    ]}
-                  >
-                    {level}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
             <View style={styles.practiceActions}>
-              <Pressable onPress={() => startUnlimitedWord()} style={styles.practiceButton}>
-                <Text style={styles.practiceButtonText}>Next Word</Text>
-              </Pressable>
+              {completed ? (
+                <Pressable onPress={() => startUnlimitedWord()} style={styles.newWordButton}>
+                  <Text style={styles.newWordButtonText}>New Word</Text>
+                </Pressable>
+              ) : null}
               <Pressable onPress={skipUnlimitedWord} style={styles.skipButton}>
                 <Text style={styles.skipButtonText}>Skip</Text>
               </Pressable>
@@ -417,13 +434,22 @@ export default function GameScreen() {
 
         <View style={[styles.hintBox, isShortScreen && styles.shortHintBox]}>
           <Text style={styles.categoryText}>{categoryLabel}</Text>
-          <Text style={styles.hintText}>
-            {completed
-              ? gameMode === "daily"
-                ? "Come back tomorrow."
-                : "Tap Next Word to keep practicing."
-              : hintLabel}
-          </Text>
+          <HintLine visible={showEmojiHint} style={styles.emojiHintText}>
+            {word.hintEmoji}
+          </HintLine>
+          <HintLine visible={showDefinitionTextHint} style={styles.definitionHintText}>
+            {word.definition}
+          </HintLine>
+          {!completed && !showDefinitionTextHint && canTapDefinitionHint ? (
+            <Pressable onPress={() => setShowDefinitionHint(true)} style={styles.hintButton}>
+              <Text style={styles.hintButtonText}>Hint</Text>
+            </Pressable>
+          ) : null}
+          {completed ? (
+            <Text style={styles.hintText}>
+              {gameMode === "daily" ? "Come back tomorrow." : "Tap New Word to keep practicing."}
+            </Text>
+          ) : null}
         </View>
 
         <KanaKeyboard
@@ -447,6 +473,97 @@ export default function GameScreen() {
         results={results}
         onClose={() => setShowResult(false)}
       />
+
+      <Modal
+        visible={showSettings}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSettings(false)}
+      >
+        <Pressable style={styles.settingsBackdrop} onPress={() => setShowSettings(false)}>
+          <Pressable style={styles.settingsMenu} onPress={(event) => event.stopPropagation()}>
+            <Text style={styles.settingsTitle}>Settings</Text>
+            <Text style={styles.settingsLabel}>Display</Text>
+            <View
+              style={[styles.segmentedControl, styles.settingsSegmentedControl]}
+              accessibilityLabel="Display mode"
+            >
+              <Pressable
+                onPress={() => handleModeChange(false)}
+                style={[styles.segment, styles.settingsSegment, !showRomaji && styles.activeSegment]}
+              >
+                <Text style={[styles.segmentText, !showRomaji && styles.activeSegmentText]}>
+                  Kana
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleModeChange(true)}
+                style={[styles.segment, styles.settingsSegment, showRomaji && styles.activeSegment]}
+              >
+                <Text style={[styles.segmentText, showRomaji && styles.activeSegmentText]}>
+                  Romaji
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={styles.settingsLabel}>Difficulty</Text>
+            <View
+              style={[styles.segmentedControl, styles.settingsSegmentedControl]}
+              accessibilityLabel="Hint mode"
+            >
+              <Pressable
+                onPress={() => setHintModeEnabled(false)}
+                style={[styles.segment, styles.settingsSegment, !hintModeEnabled && styles.activeSegment]}
+              >
+                <Text style={[styles.segmentText, !hintModeEnabled && styles.activeSegmentText]}>
+                  Earned
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setHintModeEnabled(true)}
+                style={[styles.segment, styles.settingsSegment, hintModeEnabled && styles.activeSegment]}
+              >
+                <Text style={[styles.segmentText, hintModeEnabled && styles.activeSegmentText]}>
+                  Hints
+                </Text>
+              </Pressable>
+            </View>
+            {gameMode === "unlimited" ? (
+              <>
+                <Text style={styles.settingsLabel}>Practice Level</Text>
+                <View style={styles.levelSelector} accessibilityLabel="JLPT level">
+                  {(["N5", "N4", "N3"] as JLPTLevel[]).map((level) => (
+                    <Pressable
+                      key={level}
+                      onPress={() => handleJLPTLevelChange(level)}
+                      style={[styles.levelButton, selectedJLPTLevel === level && styles.activeLevelButton]}
+                    >
+                      <Text
+                        style={[
+                          styles.levelButtonText,
+                          selectedJLPTLevel === level && styles.activeLevelButtonText
+                        ]}
+                      >
+                        {level}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : null}
+            <Pressable onPress={() => setShowSettings(false)} style={styles.settingsCloseButton}>
+              <Text style={styles.settingsCloseText}>Done</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showHelp} transparent animationType="fade" onRequestClose={() => setShowHelp(false)}>
+        <Pressable style={styles.helpBackdrop} onPress={() => setShowHelp(false)}>
+          <View style={styles.helpMenu}>
+            <Text style={styles.helpText}>Guess the Japanese word from the category.</Text>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -478,6 +595,37 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8
   },
+  settingsButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e9e0d2"
+  },
+  iconCluster: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
+  },
+  helpButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e9e0d2"
+  },
+  settingsIcon: {
+    color: "#2b2a27",
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 24
+  },
+  helpIcon: {
+    fontSize: 20,
+    lineHeight: 22
+  },
   segmentedControl: {
     flexDirection: "row",
     borderWidth: 2,
@@ -486,12 +634,19 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#fffdf8"
   },
+  settingsSegmentedControl: {
+    width: "100%"
+  },
   segment: {
     minWidth: 72,
     height: 34,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 12
+  },
+  settingsSegment: {
+    flex: 1,
+    minWidth: 0
   },
   activeSegment: {
     backgroundColor: "#2f4f4a"
@@ -547,11 +702,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 34
   },
-  subtitle: {
-    color: "#4d4840",
-    fontSize: 15,
-    fontWeight: "700"
-  },
   kicker: {
     color: "#817565",
     fontSize: 12,
@@ -592,16 +742,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8
   },
-  practiceButton: {
-    minWidth: 118,
+  newWordButton: {
+    minWidth: 112,
     height: 32,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#2f4f4a"
+    borderWidth: 1,
+    borderColor: "#cbbfad",
+    backgroundColor: "#fffdf8"
   },
-  practiceButtonText: {
-    color: "#ffffff",
+  newWordButtonText: {
+    color: "#2f4f4a",
     fontSize: 14,
     fontWeight: "900"
   },
@@ -626,13 +778,14 @@ const styles = StyleSheet.create({
     fontWeight: "800"
   },
   hintBox: {
-    minHeight: 34,
+    minHeight: 56,
     alignItems: "center",
     justifyContent: "center",
+    gap: 2,
     marginTop: -2
   },
   shortHintBox: {
-    minHeight: 30,
+    minHeight: 50,
     marginTop: -3
   },
   categoryText: {
@@ -645,5 +798,95 @@ const styles = StyleSheet.create({
     color: "#5d5448",
     fontSize: 14,
     fontWeight: "800"
+  },
+  emojiHintText: {
+    fontSize: 22,
+    lineHeight: 26
+  },
+  definitionHintText: {
+    maxWidth: 300,
+    color: "#5d5448",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    textAlign: "center"
+  },
+  hintButton: {
+    minWidth: 62,
+    height: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#cbbfad",
+    backgroundColor: "#fffdf8"
+  },
+  hintButtonText: {
+    color: "#2f4f4a",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  settingsBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(28, 27, 24, 0.25)",
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
+    paddingHorizontal: 18,
+    paddingTop: 64
+  },
+  settingsMenu: {
+    width: 236,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#fffdf8",
+    padding: 14,
+    gap: 10
+  },
+  settingsTitle: {
+    color: "#25231f",
+    fontSize: 18,
+    fontWeight: "900"
+  },
+  settingsLabel: {
+    color: "#817565",
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  settingsCloseButton: {
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2f4f4a"
+  },
+  settingsCloseText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  helpBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(28, 27, 24, 0.2)",
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
+    paddingHorizontal: 18,
+    paddingTop: 64
+  },
+  helpMenu: {
+    maxWidth: 280,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#fffdf8",
+    paddingHorizontal: 14,
+    paddingVertical: 12
+  },
+  helpText: {
+    color: "#2b2a27",
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 21
   }
 });
