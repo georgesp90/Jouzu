@@ -98,8 +98,24 @@ export const words: WordEntry[] = [
     english: "train",
     category: "transport",
     definition: "rail transport",
+    refinedDefinition: "train; rail transport that runs on tracks",
     jlpt: "N5",
-    hintEmoji: "🚆"
+    hintEmoji: "🚆",
+    closeAnswers: ["くるま", "ばす", "じてんしゃ", "じどうしゃ"],
+    confusableWords: [
+      {
+        word: "くるま",
+        romaji: "kuruma",
+        english: "car",
+        note: "A car drives on roads; でんしゃ is a train on rails."
+      },
+      {
+        word: "ばす",
+        romaji: "basu",
+        english: "bus",
+        note: "A bus runs on roads; でんしゃ runs on tracks."
+      }
+    ]
   },
   {
     id: "tomodachi-001",
@@ -118,8 +134,30 @@ export const words: WordEntry[] = [
     english: "meeting",
     category: "work",
     definition: "a gathering to discuss plans or decisions",
+    refinedDefinition: "meeting; a gathering to discuss plans or decisions",
     jlpt: "N4",
-    hintEmoji: "🗓️"
+    hintEmoji: "🗓️",
+    closeAnswers: ["せつめいかい", "れんらく", "ほうこく"],
+    confusableWords: [
+      {
+        word: "せつめいかい",
+        romaji: "setsumeikai",
+        english: "briefing",
+        note: "A briefing explains information; かいぎ is a meeting for discussion."
+      },
+      {
+        word: "れんらく",
+        romaji: "renraku",
+        english: "contact",
+        note: "Contact is communication; かいぎ is a meeting."
+      },
+      {
+        word: "ほうこく",
+        romaji: "houkoku",
+        english: "report",
+        note: "A report may happen in a meeting; かいぎ is the meeting itself."
+      }
+    ]
   },
   {
     id: "setsumei-001",
@@ -128,8 +166,30 @@ export const words: WordEntry[] = [
     english: "explanation",
     category: "communication",
     definition: "a statement that makes something clear",
+    refinedDefinition: "explanation; words that make something clear",
     jlpt: "N4",
-    hintEmoji: "💬"
+    hintEmoji: "💬",
+    closeAnswers: ["せつめいかい", "あんない", "ほうこく", "じょうほう"],
+    confusableWords: [
+      {
+        word: "せつめいかい",
+        romaji: "setsumeikai",
+        english: "briefing",
+        note: "A briefing is an event; せつめい is the explanation itself."
+      },
+      {
+        word: "あんない",
+        romaji: "annai",
+        english: "guidance",
+        note: "Guidance directs someone; せつめい explains something."
+      },
+      {
+        word: "ほうこく",
+        romaji: "houkoku",
+        english: "report",
+        note: "A report tells what happened; せつめい explains how or why."
+      }
+    ]
   },
   {
     id: "tokubetsu-001",
@@ -168,8 +228,24 @@ export const words: WordEntry[] = [
     english: "relationship",
     category: "concept",
     definition: "a connection between people or things",
+    refinedDefinition: "relationship; connection between people or things",
     jlpt: "N3",
-    hintEmoji: "🔗"
+    hintEmoji: "🔗",
+    closeAnswers: ["せつぞく", "れんらく"],
+    confusableWords: [
+      {
+        word: "せつぞく",
+        romaji: "setsuzoku",
+        english: "connection",
+        note: "Connection often means a physical/system link; かんけい is relationship/association."
+      },
+      {
+        word: "れんらく",
+        romaji: "renraku",
+        english: "contact",
+        note: "Contact is communication; かんけい is a relationship."
+      }
+    ]
   },
   {
     id: "jissai-001",
@@ -318,8 +394,24 @@ export const words: WordEntry[] = [
     english: "house",
     category: "place",
     definition: "a building where people live",
+    refinedDefinition: "house; a home/building where people live",
     jlpt: "N5",
-    hintEmoji: "🏠"
+    hintEmoji: "🏠",
+    closeAnswers: ["へや", "まち"],
+    confusableWords: [
+      {
+        word: "へや",
+        romaji: "heya",
+        english: "room",
+        note: "A room is inside a house; いえ is the house/home."
+      },
+      {
+        word: "まち",
+        romaji: "machi",
+        english: "town",
+        note: "A town contains houses; いえ is one house/home."
+      }
+    ]
   },
   {
     id: "heya-001",
@@ -328,8 +420,24 @@ export const words: WordEntry[] = [
     english: "room",
     category: "place",
     definition: "a part of a building enclosed by walls",
+    refinedDefinition: "room; one space inside a building or house",
     jlpt: "N5",
-    hintEmoji: "🚪"
+    hintEmoji: "🚪",
+    closeAnswers: ["いえ", "みせ"],
+    confusableWords: [
+      {
+        word: "いえ",
+        romaji: "ie",
+        english: "house",
+        note: "A house contains rooms; へや is a room."
+      },
+      {
+        word: "みせ",
+        romaji: "mise",
+        english: "shop",
+        note: "A shop is a place; へや is a room."
+      }
+    ]
   },
   {
     id: "eki-001",
@@ -348,8 +456,24 @@ export const words: WordEntry[] = [
     english: "car",
     category: "transport",
     definition: "a road vehicle with wheels",
+    refinedDefinition: "car; a road vehicle for people",
     jlpt: "N5",
-    hintEmoji: "🚗"
+    hintEmoji: "🚗",
+    closeAnswers: ["じどうしゃ", "ばす", "でんしゃ", "じてんしゃ"],
+    confusableWords: [
+      {
+        word: "じどうしゃ",
+        romaji: "jidousha",
+        english: "automobile",
+        note: "Automobile is more formal; くるま is the common word for car."
+      },
+      {
+        word: "ばす",
+        romaji: "basu",
+        english: "bus",
+        note: "A bus carries many people; くるま is a car."
+      }
+    ]
   },
   {
     id: "basu-001",
@@ -358,8 +482,24 @@ export const words: WordEntry[] = [
     english: "bus",
     category: "transport",
     definition: "a large road vehicle for passengers",
+    refinedDefinition: "bus; a large road vehicle carrying passengers",
     jlpt: "N5",
-    hintEmoji: "🚌"
+    hintEmoji: "🚌",
+    closeAnswers: ["くるま", "じどうしゃ", "でんしゃ"],
+    confusableWords: [
+      {
+        word: "くるま",
+        romaji: "kuruma",
+        english: "car",
+        note: "A car is smaller; ばす is a bus."
+      },
+      {
+        word: "でんしゃ",
+        romaji: "densha",
+        english: "train",
+        note: "A train runs on tracks; ばす runs on roads."
+      }
+    ]
   },
   {
     id: "jitensha-001",
@@ -368,8 +508,24 @@ export const words: WordEntry[] = [
     english: "bicycle",
     category: "transport",
     definition: "a two-wheeled vehicle powered by pedaling",
+    refinedDefinition: "bicycle; a two-wheeled vehicle powered by pedaling",
     jlpt: "N5",
-    hintEmoji: "🚲"
+    hintEmoji: "🚲",
+    closeAnswers: ["くるま", "ばす", "じどうしゃ"],
+    confusableWords: [
+      {
+        word: "くるま",
+        romaji: "kuruma",
+        english: "car",
+        note: "A car has a motor; じてんしゃ is a bicycle."
+      },
+      {
+        word: "ばす",
+        romaji: "basu",
+        english: "bus",
+        note: "A bus carries passengers; じてんしゃ is a bicycle."
+      }
+    ]
   },
   {
     id: "gakkou-001",
@@ -458,8 +614,24 @@ export const words: WordEntry[] = [
     english: "morning",
     category: "time",
     definition: "the early part of the day",
+    refinedDefinition: "morning; early part of the day",
     jlpt: "N5",
-    hintEmoji: "🌅"
+    hintEmoji: "🌅",
+    closeAnswers: ["ひる", "よる", "きょう"],
+    confusableWords: [
+      {
+        word: "ひる",
+        romaji: "hiru",
+        english: "noon",
+        note: "Noon is midday; あさ is morning."
+      },
+      {
+        word: "よる",
+        romaji: "yoru",
+        english: "night",
+        note: "Night is late/dark; あさ is morning."
+      }
+    ]
   },
   {
     id: "hiru-001",
@@ -468,8 +640,24 @@ export const words: WordEntry[] = [
     english: "noon",
     category: "time",
     definition: "the middle of the day",
+    refinedDefinition: "noon/daytime; the middle part of the day",
     jlpt: "N5",
-    hintEmoji: "☀️"
+    hintEmoji: "☀️",
+    closeAnswers: ["あさ", "よる", "きょう"],
+    confusableWords: [
+      {
+        word: "あさ",
+        romaji: "asa",
+        english: "morning",
+        note: "Morning is early; ひる is noon/daytime."
+      },
+      {
+        word: "よる",
+        romaji: "yoru",
+        english: "night",
+        note: "Night is dark; ひる is daytime/noon."
+      }
+    ]
   },
   {
     id: "yoru-001",
@@ -478,8 +666,24 @@ export const words: WordEntry[] = [
     english: "night",
     category: "time",
     definition: "the dark part of the day",
+    refinedDefinition: "night; the dark part of the day",
     jlpt: "N5",
-    hintEmoji: "🌙"
+    hintEmoji: "🌙",
+    closeAnswers: ["あさ", "ひる", "きょう"],
+    confusableWords: [
+      {
+        word: "あさ",
+        romaji: "asa",
+        english: "morning",
+        note: "Morning is early; よる is night."
+      },
+      {
+        word: "ひる",
+        romaji: "hiru",
+        english: "noon",
+        note: "Noon/daytime is bright; よる is night."
+      }
+    ]
   },
   {
     id: "kasa-001",
@@ -498,8 +702,24 @@ export const words: WordEntry[] = [
     english: "shoes",
     category: "clothing",
     definition: "footwear",
+    refinedDefinition: "shoes; footwear worn on the feet",
     jlpt: "N5",
-    hintEmoji: "👟"
+    hintEmoji: "👟",
+    closeAnswers: ["ふく", "ぼうし"],
+    confusableWords: [
+      {
+        word: "ふく",
+        romaji: "fuku",
+        english: "clothes",
+        note: "Clothes is broader; くつ is specifically shoes."
+      },
+      {
+        word: "ぼうし",
+        romaji: "boushi",
+        english: "hat",
+        note: "A hat is worn on the head; くつ are worn on the feet."
+      }
+    ]
   },
   {
     id: "fuku-001",
@@ -508,8 +728,30 @@ export const words: WordEntry[] = [
     english: "clothes",
     category: "clothing",
     definition: "things worn on the body",
+    refinedDefinition: "clothes; garments worn on the body",
     jlpt: "N5",
-    hintEmoji: "👕"
+    hintEmoji: "👕",
+    closeAnswers: ["くつ", "ぼうし", "めがね"],
+    confusableWords: [
+      {
+        word: "くつ",
+        romaji: "kutsu",
+        english: "shoes",
+        note: "Shoes are footwear; ふく means clothes in general."
+      },
+      {
+        word: "ぼうし",
+        romaji: "boushi",
+        english: "hat",
+        note: "A hat is one clothing item; ふく means clothes."
+      },
+      {
+        word: "めがね",
+        romaji: "megane",
+        english: "glasses",
+        note: "Glasses are worn, but ふく means clothes/garments."
+      }
+    ]
   },
   {
     id: "okane-001",
@@ -718,8 +960,30 @@ export const words: WordEntry[] = [
     english: "work",
     category: "work",
     definition: "a job or task",
+    refinedDefinition: "work; a job or task someone does",
     jlpt: "N4",
-    hintEmoji: "💼"
+    hintEmoji: "💼",
+    closeAnswers: ["かいしゃ", "かいぎ", "しりょう", "せきにん"],
+    confusableWords: [
+      {
+        word: "かいしゃ",
+        romaji: "kaisha",
+        english: "company",
+        note: "A company is a workplace; しごと is work/job."
+      },
+      {
+        word: "しりょう",
+        romaji: "shiryou",
+        english: "materials",
+        note: "Materials are used for work; しごと is the work itself."
+      },
+      {
+        word: "せきにん",
+        romaji: "sekinin",
+        english: "responsibility",
+        note: "Responsibility is duty; しごと is work/task."
+      }
+    ]
   },
   {
     id: "byouin-001",
@@ -728,8 +992,30 @@ export const words: WordEntry[] = [
     english: "hospital",
     category: "place",
     definition: "a place where sick people receive care",
+    refinedDefinition: "hospital; a medical place where sick or injured people receive care",
     jlpt: "N4",
-    hintEmoji: "🏥"
+    hintEmoji: "🏥",
+    closeAnswers: ["くすり", "ねつ", "けが", "ちゅうしゃ"],
+    confusableWords: [
+      {
+        word: "くすり",
+        romaji: "kusuri",
+        english: "medicine",
+        note: "Medicine is used for treatment; びょういん is the hospital."
+      },
+      {
+        word: "ねつ",
+        romaji: "netsu",
+        english: "fever",
+        note: "Fever is a symptom; びょういん is the place for care."
+      },
+      {
+        word: "けが",
+        romaji: "kega",
+        english: "injury",
+        note: "Injury is a condition; びょういん is the hospital."
+      }
+    ]
   },
   {
     id: "kusuri-001",
@@ -738,8 +1024,24 @@ export const words: WordEntry[] = [
     english: "medicine",
     category: "health",
     definition: "something used to treat illness",
+    refinedDefinition: "medicine; something taken to treat illness",
     jlpt: "N4",
-    hintEmoji: "💊"
+    hintEmoji: "💊",
+    closeAnswers: ["びょういん", "ねつ", "ちゅうしゃ"],
+    confusableWords: [
+      {
+        word: "びょういん",
+        romaji: "byouin",
+        english: "hospital",
+        note: "Hospital is the place; くすり is medicine."
+      },
+      {
+        word: "ちゅうしゃ",
+        romaji: "chuusha",
+        english: "injection",
+        note: "An injection can deliver medicine; くすり is medicine generally."
+      }
+    ]
   },
   {
     id: "karada-001",
@@ -998,8 +1300,24 @@ export const words: WordEntry[] = [
     english: "research",
     category: "study",
     definition: "careful study to discover new information",
+    refinedDefinition: "research; careful study to discover new information",
     jlpt: "N3",
-    hintEmoji: "🔬"
+    hintEmoji: "🔬",
+    closeAnswers: ["ちょうさ", "べんきょう", "じょうほう"],
+    confusableWords: [
+      {
+        word: "ちょうさ",
+        romaji: "chousa",
+        english: "survey",
+        note: "A survey can be part of research; けんきゅう is broader investigation."
+      },
+      {
+        word: "べんきょう",
+        romaji: "benkyou",
+        english: "study",
+        note: "Study is learning; けんきゅう is research to find new information."
+      }
+    ]
   },
   {
     id: "chousa-001",
@@ -1008,8 +1326,24 @@ export const words: WordEntry[] = [
     english: "survey",
     category: "study",
     definition: "an investigation or examination",
+    refinedDefinition: "survey; an investigation or examination to gather information",
     jlpt: "N3",
-    hintEmoji: "📋"
+    hintEmoji: "📋",
+    closeAnswers: ["けんきゅう", "じょうほう"],
+    confusableWords: [
+      {
+        word: "けんきゅう",
+        romaji: "kenkyuu",
+        english: "research",
+        note: "Research is broader; ちょうさ is a survey/investigation."
+      },
+      {
+        word: "じょうほう",
+        romaji: "jouhou",
+        english: "information",
+        note: "Information is what you collect; ちょうさ is the act of investigating."
+      }
+    ]
   },
   {
     id: "jouhou-001",
@@ -1028,8 +1362,24 @@ export const words: WordEntry[] = [
     english: "town",
     category: "place",
     definition: "a place where many people live and work",
+    refinedDefinition: "town; an area where people live and work",
     jlpt: "N5",
-    hintEmoji: "🏘️"
+    hintEmoji: "🏘️",
+    closeAnswers: ["いえ", "みせ", "こうえん"],
+    confusableWords: [
+      {
+        word: "いえ",
+        romaji: "ie",
+        english: "house",
+        note: "A house is one building; まち is a town."
+      },
+      {
+        word: "みせ",
+        romaji: "mise",
+        english: "shop",
+        note: "A shop is in a town; まち is the town."
+      }
+    ]
   },
   {
     id: "mise-001",
@@ -1038,8 +1388,24 @@ export const words: WordEntry[] = [
     english: "shop",
     category: "place",
     definition: "a place where things are sold",
+    refinedDefinition: "shop; a place where things are sold",
     jlpt: "N5",
-    hintEmoji: "🏬"
+    hintEmoji: "🏬",
+    closeAnswers: ["まち", "かいしゃ", "かいもの"],
+    confusableWords: [
+      {
+        word: "まち",
+        romaji: "machi",
+        english: "town",
+        note: "A shop can be in a town; みせ is the shop."
+      },
+      {
+        word: "かいもの",
+        romaji: "kaimono",
+        english: "shopping",
+        note: "Shopping is the activity; みせ is the shop."
+      }
+    ]
   },
   {
     id: "kaisha-001",
@@ -1058,8 +1424,24 @@ export const words: WordEntry[] = [
     english: "park",
     category: "place",
     definition: "an outdoor public space",
+    refinedDefinition: "park; a public outdoor space with grass or trees",
     jlpt: "N5",
-    hintEmoji: "🌳"
+    hintEmoji: "🌳",
+    closeAnswers: ["まち", "にわ"],
+    confusableWords: [
+      {
+        word: "まち",
+        romaji: "machi",
+        english: "town",
+        note: "A park can be in a town; こうえん is the park."
+      },
+      {
+        word: "にわ",
+        romaji: "niwa",
+        english: "garden",
+        note: "A garden is often private; こうえん is a public park."
+      }
+    ]
   },
   {
     id: "toire-001",
@@ -1078,8 +1460,24 @@ export const words: WordEntry[] = [
     english: "today",
     category: "time",
     definition: "this day",
+    refinedDefinition: "today; this present day",
     jlpt: "N5",
-    hintEmoji: "📅"
+    hintEmoji: "📅",
+    closeAnswers: ["あした", "きのう", "じこく", "よてい"],
+    confusableWords: [
+      {
+        word: "あした",
+        romaji: "ashita",
+        english: "tomorrow",
+        note: "Tomorrow is the next day; きょう is today."
+      },
+      {
+        word: "きのう",
+        romaji: "kinou",
+        english: "yesterday",
+        note: "Yesterday is the previous day; きょう is today."
+      }
+    ]
   },
   {
     id: "ashita-001",
@@ -1088,8 +1486,24 @@ export const words: WordEntry[] = [
     english: "tomorrow",
     category: "time",
     definition: "the day after today",
+    refinedDefinition: "tomorrow; the day after today",
     jlpt: "N5",
-    hintEmoji: "➡️"
+    hintEmoji: "➡️",
+    closeAnswers: ["きょう", "きのう", "よてい"],
+    confusableWords: [
+      {
+        word: "きょう",
+        romaji: "kyou",
+        english: "today",
+        note: "Today is the present day; あした is tomorrow."
+      },
+      {
+        word: "きのう",
+        romaji: "kinou",
+        english: "yesterday",
+        note: "Yesterday is before today; あした is after today."
+      }
+    ]
   },
   {
     id: "kinou-001",
@@ -1098,8 +1512,24 @@ export const words: WordEntry[] = [
     english: "yesterday",
     category: "time",
     definition: "the day before today",
+    refinedDefinition: "yesterday; the day before today",
     jlpt: "N5",
-    hintEmoji: "⬅️"
+    hintEmoji: "⬅️",
+    closeAnswers: ["きょう", "あした"],
+    confusableWords: [
+      {
+        word: "きょう",
+        romaji: "kyou",
+        english: "today",
+        note: "Today is the present day; きのう is yesterday."
+      },
+      {
+        word: "あした",
+        romaji: "ashita",
+        english: "tomorrow",
+        note: "Tomorrow is after today; きのう is before today."
+      }
+    ]
   },
   {
     id: "tokei-001",
@@ -1368,18 +1798,36 @@ export const words: WordEntry[] = [
     english: "practice",
     category: "study",
     definition: "practice; training repeatedly to improve a skill",
-    refinedDefinition: "practice; training repeatedly to improve a skill",
+    refinedDefinition: "practice; repeated training to improve a skill",
     jlpt: "N4",
     hintEmoji: "🏋️",
-    closeAnswers: ["べんきょう"],
+    closeAnswers: ["べんきょう", "しゅくだい", "じゅぎょう", "どりょく"],
     confusableWords: [
       {
         word: "べんきょう",
         romaji: "benkyou",
         english: "study",
-        note: "This word is more specifically practice."
+        note: "Broader learning or studying; れんしゅう is repeated practice/training."
+      },
+      {
+        word: "しゅくだい",
+        romaji: "shukudai",
+        english: "homework",
+        note: "Homework is assigned work; れんしゅう is repeated practice."
+      },
+      {
+        word: "じゅぎょう",
+        romaji: "jugyou",
+        english: "class",
+        note: "Class is a lesson; れんしゅう is practice/training."
+      },
+      {
+        word: "どりょく",
+        romaji: "doryoku",
+        english: "effort",
+        note: "Effort is the energy you put in; practice is the repeated action."
       }
-    ]
+    ],
   },
   {
     id: "shiken-001",
@@ -1388,8 +1836,30 @@ export const words: WordEntry[] = [
     english: "exam",
     category: "study",
     definition: "a test of knowledge or skill",
+    refinedDefinition: "exam; a test of knowledge or skill",
     jlpt: "N4",
-    hintEmoji: "📝"
+    hintEmoji: "📝",
+    closeAnswers: ["べんきょう", "しゅくだい", "ごうかく", "ふごうかく"],
+    confusableWords: [
+      {
+        word: "べんきょう",
+        romaji: "benkyou",
+        english: "study",
+        note: "Study prepares you for an exam; しけん is the exam itself."
+      },
+      {
+        word: "しゅくだい",
+        romaji: "shukudai",
+        english: "homework",
+        note: "Homework is assigned work; しけん is a test."
+      },
+      {
+        word: "ごうかく",
+        romaji: "goukaku",
+        english: "passing",
+        note: "Passing is an exam result; しけん is the exam."
+      }
+    ]
   },
   {
     id: "shukudai-001",
@@ -1397,9 +1867,31 @@ export const words: WordEntry[] = [
     romaji: "shukudai",
     english: "homework",
     category: "study",
-    definition: "schoolwork done outside class",
+    definition: "homework; schoolwork assigned to do outside class",
+    refinedDefinition: "homework; assigned schoolwork done outside class",
     jlpt: "N4",
-    hintEmoji: "📚"
+    hintEmoji: "📚",
+    closeAnswers: ["べんきょう", "れんしゅう", "じゅぎょう"],
+    confusableWords: [
+      {
+        word: "べんきょう",
+        romaji: "benkyou",
+        english: "study",
+        note: "Study is broader; しゅくだい is assigned homework."
+      },
+      {
+        word: "れんしゅう",
+        romaji: "renshuu",
+        english: "practice",
+        note: "Practice is training; しゅくだい is homework assigned by a teacher."
+      },
+      {
+        word: "じゅぎょう",
+        romaji: "jugyou",
+        english: "class",
+        note: "Class is lesson time; しゅくだい is work done outside class."
+      }
+    ],
   },
   {
     id: "jugyou-001",
@@ -1407,9 +1899,31 @@ export const words: WordEntry[] = [
     romaji: "jugyou",
     english: "class",
     category: "study",
-    definition: "a lesson at school",
+    definition: "class; a lesson at school",
+    refinedDefinition: "class; a lesson taught at school",
     jlpt: "N4",
-    hintEmoji: "🏫"
+    hintEmoji: "🏫",
+    closeAnswers: ["べんきょう", "しゅくだい", "れんしゅう"],
+    confusableWords: [
+      {
+        word: "べんきょう",
+        romaji: "benkyou",
+        english: "study",
+        note: "Study is broader; じゅぎょう is a class or lesson."
+      },
+      {
+        word: "しゅくだい",
+        romaji: "shukudai",
+        english: "homework",
+        note: "Homework is done outside class; じゅぎょう is the class itself."
+      },
+      {
+        word: "れんしゅう",
+        romaji: "renshuu",
+        english: "practice",
+        note: "Practice is repeated training; じゅぎょう is a lesson/class."
+      }
+    ],
   },
   {
     id: "seito-001",
@@ -1468,8 +1982,24 @@ export const words: WordEntry[] = [
     english: "automobile",
     category: "transport",
     definition: "a car or motor vehicle",
+    refinedDefinition: "automobile; a motor vehicle such as a car",
     jlpt: "N4",
-    hintEmoji: "🚗"
+    hintEmoji: "🚗",
+    closeAnswers: ["くるま", "ばす"],
+    confusableWords: [
+      {
+        word: "くるま",
+        romaji: "kuruma",
+        english: "car",
+        note: "Car is the common word; じどうしゃ is the formal word for automobile."
+      },
+      {
+        word: "ばす",
+        romaji: "basu",
+        english: "bus",
+        note: "A bus is a vehicle, but じどうしゃ is automobile/motor vehicle."
+      }
+    ]
   },
   {
     id: "jikoku-001",
@@ -1478,8 +2008,24 @@ export const words: WordEntry[] = [
     english: "time",
     category: "time",
     definition: "a specific point on a clock",
+    refinedDefinition: "time; a specific point on a clock or schedule",
     jlpt: "N4",
-    hintEmoji: "🕒"
+    hintEmoji: "🕒",
+    closeAnswers: ["とけい", "よてい", "きょう"],
+    confusableWords: [
+      {
+        word: "とけい",
+        romaji: "tokei",
+        english: "clock",
+        note: "A clock shows time; じこく is the time itself."
+      },
+      {
+        word: "よてい",
+        romaji: "yotei",
+        english: "plan",
+        note: "Plans happen at times; じこく is a specific time."
+      }
+    ]
   },
   {
     id: "yotei-001",
@@ -1488,8 +2034,24 @@ export const words: WordEntry[] = [
     english: "plan",
     category: "time",
     definition: "something arranged for the future",
+    refinedDefinition: "plan; something arranged for the future",
     jlpt: "N4",
-    hintEmoji: "📆"
+    hintEmoji: "📆",
+    closeAnswers: ["じこく", "きょう", "あした", "もくひょう"],
+    confusableWords: [
+      {
+        word: "じこく",
+        romaji: "jikoku",
+        english: "time",
+        note: "Time is when something happens; よてい is the plan/schedule."
+      },
+      {
+        word: "もくひょう",
+        romaji: "mokuhyou",
+        english: "goal",
+        note: "A goal is a target; よてい is an arranged plan."
+      }
+    ]
   },
   {
     id: "sanpo-001",
@@ -1558,8 +2120,24 @@ export const words: WordEntry[] = [
     english: "question",
     category: "communication",
     definition: "something asked to get information",
+    refinedDefinition: "question; something asked to get information",
     jlpt: "N4",
-    hintEmoji: "❓"
+    hintEmoji: "❓",
+    closeAnswers: ["へんじ", "れんらく", "じょうほう"],
+    confusableWords: [
+      {
+        word: "へんじ",
+        romaji: "henji",
+        english: "reply",
+        note: "A reply answers a question; しつもん is the question."
+      },
+      {
+        word: "じょうほう",
+        romaji: "jouhou",
+        english: "information",
+        note: "Information is what a question asks for."
+      }
+    ]
   },
   {
     id: "henji-001",
@@ -1568,8 +2146,24 @@ export const words: WordEntry[] = [
     english: "reply",
     category: "communication",
     definition: "an answer to someone",
+    refinedDefinition: "reply; an answer given back to someone",
     jlpt: "N4",
-    hintEmoji: "💬"
+    hintEmoji: "💬",
+    closeAnswers: ["しつもん", "れんらく", "ほうこく"],
+    confusableWords: [
+      {
+        word: "しつもん",
+        romaji: "shitsumon",
+        english: "question",
+        note: "A question asks; へんじ answers."
+      },
+      {
+        word: "れんらく",
+        romaji: "renraku",
+        english: "contact",
+        note: "Contact is communication; へんじ is a reply."
+      }
+    ]
   },
   {
     id: "shirase-001",
@@ -1608,8 +2202,24 @@ export const words: WordEntry[] = [
     english: "reason",
     category: "concept",
     definition: "why something happens",
+    refinedDefinition: "reason; why something happens or is done",
     jlpt: "N4",
-    hintEmoji: "💭"
+    hintEmoji: "💭",
+    closeAnswers: ["もくてき", "もくひょう", "げんいん"],
+    confusableWords: [
+      {
+        word: "もくてき",
+        romaji: "mokuteki",
+        english: "purpose",
+        note: "Purpose is intended aim; りゆう is a reason why."
+      },
+      {
+        word: "げんいん",
+        romaji: "genin",
+        english: "cause",
+        note: "Cause produces a result; りゆう is a reason/explanation."
+      }
+    ]
   },
   {
     id: "goukaku-001",
@@ -1638,8 +2248,24 @@ export const words: WordEntry[] = [
     english: "purpose",
     category: "concept",
     definition: "the reason for doing something",
+    refinedDefinition: "purpose; why something is done",
     jlpt: "N3",
-    hintEmoji: "🎯"
+    hintEmoji: "🎯",
+    closeAnswers: ["もくひょう", "りゆう"],
+    confusableWords: [
+      {
+        word: "もくひょう",
+        romaji: "mokuhyou",
+        english: "goal",
+        note: "A goal is a target; もくてき is the purpose or reason for doing something."
+      },
+      {
+        word: "りゆう",
+        romaji: "riyu",
+        english: "reason",
+        note: "Reason explains why; もくてき is the intended purpose."
+      }
+    ]
   },
   {
     id: "mokuhyou-001",
@@ -1648,8 +2274,24 @@ export const words: WordEntry[] = [
     english: "goal",
     category: "concept",
     definition: "something someone wants to achieve",
+    refinedDefinition: "goal; a target someone wants to reach",
     jlpt: "N3",
-    hintEmoji: "🏁"
+    hintEmoji: "🏁",
+    closeAnswers: ["もくてき", "りゆう"],
+    confusableWords: [
+      {
+        word: "もくてき",
+        romaji: "mokuteki",
+        english: "purpose",
+        note: "Purpose is why; もくひょう is the target to reach."
+      },
+      {
+        word: "りゆう",
+        romaji: "riyu",
+        english: "reason",
+        note: "Reason explains why; もくひょう is a goal/target."
+      }
+    ]
   },
   {
     id: "kikai-001",
@@ -1678,8 +2320,18 @@ export const words: WordEntry[] = [
     english: "condition",
     category: "concept",
     definition: "the state something is in",
+    refinedDefinition: "condition; the state something is in",
     jlpt: "N3",
-    hintEmoji: "📊"
+    hintEmoji: "📊",
+    closeAnswers: ["ばあい"],
+    confusableWords: [
+      {
+        word: "ばあい",
+        romaji: "baai",
+        english: "case",
+        note: "Case is a situation; じょうたい is a condition/state."
+      }
+    ]
   },
   {
     id: "baai-001",
@@ -1688,8 +2340,18 @@ export const words: WordEntry[] = [
     english: "case",
     category: "concept",
     definition: "a situation or circumstance",
+    refinedDefinition: "case; a situation or circumstance",
     jlpt: "N3",
-    hintEmoji: "📌"
+    hintEmoji: "📌",
+    closeAnswers: ["じょうたい"],
+    confusableWords: [
+      {
+        word: "じょうたい",
+        romaji: "joutai",
+        english: "condition",
+        note: "Condition is a state; ばあい is a case/situation."
+      }
+    ]
   },
   {
     id: "kekka-001",
@@ -1698,8 +2360,24 @@ export const words: WordEntry[] = [
     english: "result",
     category: "concept",
     definition: "what happens because of something",
+    refinedDefinition: "result; outcome after something happens",
     jlpt: "N3",
-    hintEmoji: "📈"
+    hintEmoji: "📈",
+    closeAnswers: ["こうか", "えいきょう", "げんいん"],
+    confusableWords: [
+      {
+        word: "こうか",
+        romaji: "kouka",
+        english: "effect",
+        note: "Effect is impact; けっか is the final result/outcome."
+      },
+      {
+        word: "げんいん",
+        romaji: "genin",
+        english: "cause",
+        note: "Cause comes before; けっか is what happens after."
+      }
+    ]
   },
   {
     id: "genin-001",
@@ -1708,8 +2386,24 @@ export const words: WordEntry[] = [
     english: "cause",
     category: "concept",
     definition: "the reason something happens",
+    refinedDefinition: "cause; what makes something happen",
     jlpt: "N3",
-    hintEmoji: "🔎"
+    hintEmoji: "🔎",
+    closeAnswers: ["りゆう", "けっか"],
+    confusableWords: [
+      {
+        word: "りゆう",
+        romaji: "riyu",
+        english: "reason",
+        note: "Reason explains why; げんいん is the cause."
+      },
+      {
+        word: "けっか",
+        romaji: "kekka",
+        english: "result",
+        note: "Result comes after; げんいん is what causes it."
+      }
+    ]
   },
   {
     id: "henka-001",
@@ -1718,8 +2412,18 @@ export const words: WordEntry[] = [
     english: "change",
     category: "concept",
     definition: "a difference from before",
+    refinedDefinition: "change; a difference from before",
     jlpt: "N3",
-    hintEmoji: "🔄"
+    hintEmoji: "🔄",
+    closeAnswers: ["せいちょう"],
+    confusableWords: [
+      {
+        word: "せいちょう",
+        romaji: "seichou",
+        english: "growth",
+        note: "Growth is a type of positive change; へんか is change in general."
+      }
+    ]
   },
   {
     id: "seichou-001",
@@ -1728,8 +2432,24 @@ export const words: WordEntry[] = [
     english: "growth",
     category: "life",
     definition: "the process of becoming bigger or better",
+    refinedDefinition: "growth; becoming bigger, better, or more developed",
     jlpt: "N3",
-    hintEmoji: "🌱"
+    hintEmoji: "🌱",
+    closeAnswers: ["へんか", "どりょく"],
+    confusableWords: [
+      {
+        word: "へんか",
+        romaji: "henka",
+        english: "change",
+        note: "Change is general; せいちょう is growth/development."
+      },
+      {
+        word: "どりょく",
+        romaji: "doryoku",
+        english: "effort",
+        note: "Effort can lead to growth; せいちょう is the growth."
+      }
+    ]
   },
   {
     id: "doryoku-001",
@@ -1738,8 +2458,24 @@ export const words: WordEntry[] = [
     english: "effort",
     category: "life",
     definition: "hard work toward a goal",
+    refinedDefinition: "effort; hard work put toward a goal",
     jlpt: "N3",
-    hintEmoji: "💪"
+    hintEmoji: "💪",
+    closeAnswers: ["れんしゅう", "せいちょう"],
+    confusableWords: [
+      {
+        word: "れんしゅう",
+        romaji: "renshuu",
+        english: "practice",
+        note: "Practice is repeated action; どりょく is the effort you put in."
+      },
+      {
+        word: "せいちょう",
+        romaji: "seichou",
+        english: "growth",
+        note: "Growth may result from effort; どりょく is effort."
+      }
+    ]
   },
   {
     id: "sekinin-001",
@@ -1758,8 +2494,30 @@ export const words: WordEntry[] = [
     english: "contact",
     category: "communication",
     definition: "communication with someone",
+    refinedDefinition: "contact; communication with someone",
     jlpt: "N3",
-    hintEmoji: "📞"
+    hintEmoji: "📞",
+    closeAnswers: ["へんじ", "ほうこく", "しつもん", "でんわ"],
+    confusableWords: [
+      {
+        word: "へんじ",
+        romaji: "henji",
+        english: "reply",
+        note: "A reply is one response; れんらく is contact/communication."
+      },
+      {
+        word: "ほうこく",
+        romaji: "houkoku",
+        english: "report",
+        note: "A report gives information; れんらく is contacting someone."
+      },
+      {
+        word: "でんわ",
+        romaji: "denwa",
+        english: "phone",
+        note: "A phone can be used for contact; れんらく is the contact itself."
+      }
+    ]
   },
   {
     id: "houkoku-001",
@@ -1768,8 +2526,24 @@ export const words: WordEntry[] = [
     english: "report",
     category: "communication",
     definition: "giving information about what happened",
+    refinedDefinition: "report; giving information about what happened",
     jlpt: "N3",
-    hintEmoji: "🧾"
+    hintEmoji: "🧾",
+    closeAnswers: ["れんらく", "へんじ", "じょうほう", "せつめい"],
+    confusableWords: [
+      {
+        word: "れんらく",
+        romaji: "renraku",
+        english: "contact",
+        note: "Contact reaches someone; ほうこく reports information."
+      },
+      {
+        word: "じょうほう",
+        romaji: "jouhou",
+        english: "information",
+        note: "Information is the content; ほうこく is reporting it."
+      }
+    ]
   },
   {
     id: "setsuzoku-001",
@@ -1778,8 +2552,24 @@ export const words: WordEntry[] = [
     english: "connection",
     category: "technology",
     definition: "a link between things or systems",
+    refinedDefinition: "connection; a link between things or systems",
     jlpt: "N3",
-    hintEmoji: "🔌"
+    hintEmoji: "🔌",
+    closeAnswers: ["かんけい", "れんらく"],
+    confusableWords: [
+      {
+        word: "かんけい",
+        romaji: "kankei",
+        english: "relationship",
+        note: "Relationship is broader; せつぞく is a connection/link."
+      },
+      {
+        word: "れんらく",
+        romaji: "renraku",
+        english: "contact",
+        note: "Contact is communication; せつぞく is a connection."
+      }
+    ]
   },
   {
     id: "ao-001",
@@ -1928,8 +2718,24 @@ export const words: WordEntry[] = [
     english: "briefing",
     category: "communication",
     definition: "a meeting where something is explained",
+    refinedDefinition: "briefing; a meeting where something is explained",
     jlpt: "N4",
-    hintEmoji: "🗣️"
+    hintEmoji: "🗣️",
+    closeAnswers: ["せつめい", "かいぎ", "あんない"],
+    confusableWords: [
+      {
+        word: "せつめい",
+        romaji: "setsumei",
+        english: "explanation",
+        note: "Explanation is the content; せつめいかい is the briefing event."
+      },
+      {
+        word: "かいぎ",
+        romaji: "kaigi",
+        english: "meeting",
+        note: "Meeting is general; せつめいかい is specifically for explanation."
+      }
+    ]
   },
   {
     id: "annai-001",
@@ -1938,8 +2744,24 @@ export const words: WordEntry[] = [
     english: "guidance",
     category: "communication",
     definition: "help showing someone where to go or what to do",
+    refinedDefinition: "guidance; help showing where to go or what to do",
     jlpt: "N4",
-    hintEmoji: "🪧"
+    hintEmoji: "🪧",
+    closeAnswers: ["せつめい", "せつめいかい", "じょうほう"],
+    confusableWords: [
+      {
+        word: "せつめい",
+        romaji: "setsumei",
+        english: "explanation",
+        note: "Explanation clarifies; あんない guides or directs."
+      },
+      {
+        word: "じょうほう",
+        romaji: "jouhou",
+        english: "information",
+        note: "Information is facts; あんない is guidance using those facts."
+      }
+    ]
   },
   {
     id: "uketsuke-001",
@@ -1968,8 +2790,24 @@ export const words: WordEntry[] = [
     english: "materials",
     category: "work",
     definition: "documents or resources used for reference",
+    refinedDefinition: "materials; documents or resources used for reference",
     jlpt: "N4",
-    hintEmoji: "📄"
+    hintEmoji: "📄",
+    closeAnswers: ["しごと", "ほうこく", "じょうほう"],
+    confusableWords: [
+      {
+        word: "じょうほう",
+        romaji: "jouhou",
+        english: "information",
+        note: "Information is content; しりょう are materials/documents."
+      },
+      {
+        word: "ほうこく",
+        romaji: "houkoku",
+        english: "report",
+        note: "A report can be a material, but しりょう means reference materials."
+      }
+    ]
   },
   {
     id: "chuusha-001",
@@ -1978,8 +2816,24 @@ export const words: WordEntry[] = [
     english: "injection",
     category: "health",
     definition: "medicine given with a needle",
+    refinedDefinition: "injection; medicine given with a needle",
     jlpt: "N4",
-    hintEmoji: "💉"
+    hintEmoji: "💉",
+    closeAnswers: ["くすり", "びょういん", "けが"],
+    confusableWords: [
+      {
+        word: "くすり",
+        romaji: "kusuri",
+        english: "medicine",
+        note: "Medicine is broader; ちゅうしゃ is an injection."
+      },
+      {
+        word: "びょういん",
+        romaji: "byouin",
+        english: "hospital",
+        note: "Hospital is the place; ちゅうしゃ is the injection."
+      }
+    ]
   },
   {
     id: "netsu-001",
@@ -1988,8 +2842,24 @@ export const words: WordEntry[] = [
     english: "fever",
     category: "health",
     definition: "a high body temperature",
+    refinedDefinition: "fever; a high body temperature from illness",
     jlpt: "N4",
-    hintEmoji: "🤒"
+    hintEmoji: "🤒",
+    closeAnswers: ["びょういん", "くすり", "けが"],
+    confusableWords: [
+      {
+        word: "くすり",
+        romaji: "kusuri",
+        english: "medicine",
+        note: "Medicine treats illness; ねつ is fever."
+      },
+      {
+        word: "けが",
+        romaji: "kega",
+        english: "injury",
+        note: "Injury is physical damage; ねつ is fever."
+      }
+    ]
   },
   {
     id: "kega-001",
@@ -1998,8 +2868,24 @@ export const words: WordEntry[] = [
     english: "injury",
     category: "health",
     definition: "damage to the body",
+    refinedDefinition: "injury; damage to the body",
     jlpt: "N4",
-    hintEmoji: "🩹"
+    hintEmoji: "🩹",
+    closeAnswers: ["びょういん", "くすり", "ねつ", "ちゅうしゃ"],
+    confusableWords: [
+      {
+        word: "ねつ",
+        romaji: "netsu",
+        english: "fever",
+        note: "Fever is sickness/temperature; けが is an injury."
+      },
+      {
+        word: "びょういん",
+        romaji: "byouin",
+        english: "hospital",
+        note: "Hospital is where you may go for an injury; けが is the injury."
+      }
+    ]
   },
   {
     id: "kouka-001",
@@ -2008,8 +2894,24 @@ export const words: WordEntry[] = [
     english: "effect",
     category: "concept",
     definition: "a result or influence caused by something",
+    refinedDefinition: "effect; impact caused by something",
     jlpt: "N3",
-    hintEmoji: "✨"
+    hintEmoji: "✨",
+    closeAnswers: ["けっか", "えいきょう"],
+    confusableWords: [
+      {
+        word: "けっか",
+        romaji: "kekka",
+        english: "result",
+        note: "A result is an outcome; こうか is an effect/impact."
+      },
+      {
+        word: "えいきょう",
+        romaji: "eikyou",
+        english: "influence",
+        note: "Influence is broader; こうか is a specific effect."
+      }
+    ]
   },
   {
     id: "eikyou-001",
@@ -2018,8 +2920,24 @@ export const words: WordEntry[] = [
     english: "influence",
     category: "concept",
     definition: "the power to affect something",
+    refinedDefinition: "influence; power to affect something",
     jlpt: "N3",
-    hintEmoji: "🌊"
+    hintEmoji: "🌊",
+    closeAnswers: ["こうか", "けっか"],
+    confusableWords: [
+      {
+        word: "こうか",
+        romaji: "kouka",
+        english: "effect",
+        note: "Effect is a result/impact; えいきょう is influence."
+      },
+      {
+        word: "けっか",
+        romaji: "kekka",
+        english: "result",
+        note: "A result is what happened; えいきょう is influence on something."
+      }
+    ]
   },
   {
     id: "kanri-001",

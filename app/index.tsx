@@ -459,12 +459,7 @@ export default function GameScreen() {
 
     const currentChars = Array.from(currentGuess);
 
-    if (currentChars.length !== answerChars.length) {
-      Alert.alert("Keep going", `Today's word is ${answerChars.length} kana.`);
-      return;
-    }
-
-    if (!KANA_ONLY.test(currentGuess)) {
+    if (currentGuess && !KANA_ONLY.test(currentGuess)) {
       Alert.alert("Kana only", "Use hiragana for this puzzle.");
       return;
     }
@@ -478,6 +473,11 @@ export default function GameScreen() {
 
       Alert.alert("Close!", `${meaningText} ${confusableWord.note ?? ""}`.trim());
       setCurrentGuess("");
+      return;
+    }
+
+    if (currentChars.length !== answerChars.length) {
+      Alert.alert("Keep going", `Today's word is ${answerChars.length} kana.`);
       return;
     }
 

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import { PanResponder, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, PanResponder, Pressable, StyleSheet, Text, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import { TileStatus } from "@/types/game";
 import { getKanaRomaji } from "@/utils/kanaRomaji";
 
@@ -54,18 +55,51 @@ export function KanaKeyboard({
     );
   }, []);
   const [pageIndex, setPageIndex] = useState(0);
+  const slideX = useRef(new Animated.Value(0)).current;
+  const pageOpacity = useRef(new Animated.Value(1)).current;
   const currentPage = pages[pageIndex];
 
+  const animateToPage = (nextPageIndex: number, direction: -1 | 1) => {
+    if (nextPageIndex === pageIndex || nextPageIndex < 0 || nextPageIndex > pages.length - 1) {
+      return;
+    }
+
+    slideX.setValue(direction * 44);
+    pageOpacity.setValue(0.35);
+    setPageIndex(nextPageIndex);
+
+    Animated.parallel([
+      Animated.spring(slideX, {
+        toValue: 0,
+        damping: 18,
+        stiffness: 220,
+        mass: 0.55,
+        useNativeDriver: true
+      }),
+      Animated.timing(pageOpacity, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true
+      })
+    ]).start();
+  };
+
   const goToPreviousPage = () => {
-    setPageIndex((value) => Math.max(value - 1, 0));
+    animateToPage(Math.max(pageIndex - 1, 0), -1);
   };
 
   const goToNextPage = () => {
-    setPageIndex((value) => Math.min(value + 1, pages.length - 1));
+    animateToPage(Math.min(pageIndex + 1, pages.length - 1), 1);
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
+  const handleKanaPress = (kana: string) => {
+    void Haptics.selectionAsync();
+    onKanaPress(kana);
+  };
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) =>
         Math.abs(gestureState.dx) > 18 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
       onPanResponderRelease: (_, gestureState) => {
@@ -77,8 +111,9 @@ export function KanaKeyboard({
           goToPreviousPage();
         }
       }
-    })
-  ).current;
+      }),
+    [pageIndex, pages.length]
+  );
 
   return (
     <View style={[styles.keyboard, compact && styles.compactKeyboard]} accessibilityLabel="Kana keyboard">
@@ -105,7 +140,17 @@ export function KanaKeyboard({
           </Pressable>
         </View>
 
-        <View style={[styles.kanaPage, compact && styles.compactKanaPage]} {...panResponder.panHandlers}>
+        <Animated.View
+          style={[
+            styles.kanaPage,
+            compact && styles.compactKanaPage,
+            {
+              opacity: pageOpacity,
+              transform: [{ translateX: slideX }]
+            }
+          ]}
+          {...panResponder.panHandlers}
+        >
           {currentPage.map((row, rowIndex) => (
             <View key={`${pageIndex}-${rowIndex}`} style={[styles.row, compact && styles.compactRow]}>
               {row.map((kana) => {
@@ -115,7 +160,7 @@ export function KanaKeyboard({
                 return (
                   <Pressable
                     key={kana}
-                    onPress={() => onKanaPress(kana)}
+                    onPress={() => handleKanaPress(kana)}
                     disabled={disabled}
                     style={({ pressed }) => [
                       styles.key,
@@ -150,7 +195,7 @@ export function KanaKeyboard({
               })}
             </View>
           ))}
-        </View>
+        </Animated.View>
       </View>
 
       <View style={[styles.actionRow, compact && styles.compactActionRow]}>
