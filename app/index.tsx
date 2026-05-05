@@ -3,6 +3,7 @@ import {
   Alert,
   Animated,
   Modal,
+  PanResponder,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -15,15 +16,17 @@ import { KanaKeyboard } from "@/components/KanaKeyboard";
 import { ResultModal } from "@/components/ResultModal";
 import { acceptedGuesses } from "@/data/acceptedGuesses";
 import { wordPools } from "@/data/words";
-import { DailyProgress, JLPTLevel, TileStatus, WordEntry } from "@/types/game";
+import { DailyProgress, JLPTLevel, TileStatus, WordEntry, WordMastery } from "@/types/game";
 import { evaluateGuess } from "@/utils/evaluateGuess";
 import { getDailyPuzzle } from "@/utils/getDailyPuzzle";
 import { getPuzzleNumber, getTodayKey } from "@/utils/getWordOfTheDay";
 import {
   loadProgress,
   loadShowRomajiPreference,
+  loadWordMastery,
   saveProgress,
-  saveShowRomajiPreference
+  saveShowRomajiPreference,
+  saveWordMastery
 } from "@/utils/storage";
 
 const KANA_ONLY = /^[\u3040-\u309f]+$/;
@@ -33,13 +36,73 @@ function getMaxGuesses(answerLength: number): number {
   return answerLength === 2 ? 4 : 6;
 }
 
-function selectRandomWord(level: JLPTLevel, excludedWordIds: string[] = []): WordEntry {
+function getMasteryLevel(masteryByWord: Record<string, WordMastery>, wordId: string): number {
+  return masteryByWord[wordId]?.masteryLevel ?? 0;
+}
+
+function getReviewWords(masteryByWord: Record<string, WordMastery>): WordEntry[] {
+  const wordsById = new Map<string, WordEntry>();
+
+  Object.values(wordPools)
+    .flat()
+    .forEach((word) => wordsById.set(word.id, word));
+
+  return Object.values(masteryByWord)
+    .filter((mastery) => mastery.lastResult === "incorrect")
+    .map((mastery) => wordsById.get(mastery.wordId))
+    .filter((word): word is WordEntry => Boolean(word));
+}
+
+function getNextMastery(
+  currentMastery: Record<string, WordMastery>,
+  practiceWord: WordEntry,
+  result: "correct" | "incorrect"
+): Record<string, WordMastery> {
+  const previous = currentMastery[practiceWord.id];
+  const previousLevel = previous?.masteryLevel ?? 0;
+  const nextLevel = result === "correct" ? previousLevel + 1 : Math.max(0, previousLevel - 1);
+
+  return {
+    ...currentMastery,
+    [practiceWord.id]: {
+      wordId: practiceWord.id,
+      masteryLevel: nextLevel,
+      lastResult: result,
+      lastSeen: Date.now()
+    }
+  };
+}
+
+function selectWeightedWord(
+  candidates: WordEntry[],
+  masteryByWord: Record<string, WordMastery>
+): WordEntry {
+  const weightedWords = candidates.flatMap((word) => {
+    const mastery = masteryByWord[word.id];
+    const masteryLevel = mastery?.masteryLevel ?? 0;
+    const weight =
+      mastery?.lastResult === "incorrect" ? Math.max(2, 4 - masteryLevel) : Math.max(1, 2 - masteryLevel);
+
+    return Array.from({ length: weight }, () => word);
+  });
+
+  return weightedWords[Math.floor(Math.random() * weightedWords.length)];
+}
+
+function selectRandomWord(
+  level: JLPTLevel,
+  excludedWordIds: string[] = [],
+  masteryByWord: Record<string, WordMastery> = {},
+  reviewWeakOnly = false
+): WordEntry {
   const pool = wordPools[level].length > 0 ? wordPools[level] : wordPools.N5;
   const excludedIds = new Set(excludedWordIds);
-  const availableWords = pool.filter((word) => !excludedIds.has(word.id));
-  const candidatePool = availableWords.length > 0 ? availableWords : pool;
+  const levelPool = reviewWeakOnly ? getReviewWords(masteryByWord) : pool;
+  const fallbackPool = levelPool.length > 0 ? levelPool : pool;
+  const availableWords = fallbackPool.filter((word) => !excludedIds.has(word.id));
+  const candidatePool = availableWords.length > 0 ? availableWords : fallbackPool;
 
-  return candidatePool[Math.floor(Math.random() * candidatePool.length)];
+  return selectWeightedWord(candidatePool, masteryByWord);
 }
 
 function HintLine({
@@ -76,6 +139,8 @@ export default function GameScreen() {
   const [gameMode, setGameMode] = useState<GameMode>("daily");
   const [selectedJLPTLevel, setSelectedJLPTLevel] = useState<JLPTLevel>("N5");
   const [unlimitedWord, setUnlimitedWord] = useState(() => selectRandomWord("N5"));
+  const [masteryByWord, setMasteryByWord] = useState<Record<string, WordMastery>>({});
+  const [reviewWeakOnly, setReviewWeakOnly] = useState(false);
   const [seenPracticeWordIds, setSeenPracticeWordIds] = useState<Record<JLPTLevel, string[]>>({
     N5: [],
     N4: [],
@@ -98,6 +163,7 @@ export default function GameScreen() {
   const [hintModeEnabled, setHintModeEnabled] = useState(false);
   const [wordsSolved, setWordsSolved] = useState(0);
   const [wordsAttempted, setWordsAttempted] = useState(0);
+  const [masteryFeedback, setMasteryFeedback] = useState("");
   const [shakeTrigger, setShakeTrigger] = useState(0);
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
@@ -112,6 +178,16 @@ export default function GameScreen() {
     isShortScreen ? 38 : 42,
     Math.min(maxTileSize, horizontalTileLimit, verticalTileLimit)
   );
+  const isReviewFlashcardMode = gameMode === "unlimited" && reviewWeakOnly;
+  const reviewWords = useMemo(() => getReviewWords(masteryByWord), [masteryByWord]);
+  const hasReviewWords = reviewWords.length > 0;
+  const currentMastery = masteryByWord[word.id];
+  const reviewResultLabel =
+    currentMastery?.lastResult === "correct"
+      ? "Last time: got it right"
+      : currentMastery?.lastResult === "incorrect"
+        ? "Last time: missed it"
+        : "New review card";
 
   const persistProgress = useCallback(
     async (nextProgress: Omit<DailyProgress, "date" | "wordId">) => {
@@ -124,7 +200,7 @@ export default function GameScreen() {
     [todayKey, word.id]
   );
 
-  const resetBoard = () => {
+  const resetBoard = (preserveMasteryFeedback = false) => {
     setGuesses([]);
     setResults([]);
     setCurrentGuess("");
@@ -132,20 +208,35 @@ export default function GameScreen() {
     setCompleted(false);
     setShowResult(false);
     setShowDefinitionHint(false);
+    if (!preserveMasteryFeedback) {
+      setMasteryFeedback("");
+    }
   };
 
-  const advancePracticeWord = (level: JLPTLevel, currentWordId?: string) => {
+  const advancePracticeWord = (
+    level: JLPTLevel,
+    currentWordId?: string,
+    nextReviewWeakOnly = reviewWeakOnly,
+    nextMasteryByWord = masteryByWord
+  ) => {
     setSeenPracticeWordIds((seenIdsByLevel) => {
       const pool = wordPools[level].length > 0 ? wordPools[level] : wordPools.N5;
-      const poolIds = new Set(pool.map((entry) => entry.id));
+      const eligiblePool = nextReviewWeakOnly ? getReviewWords(nextMasteryByWord) : pool;
+      const candidateCyclePool = eligiblePool.length > 0 ? eligiblePool : pool;
+      const poolIds = new Set(candidateCyclePool.map((entry) => entry.id));
       const seenIds = seenIdsByLevel[level].filter((id) => poolIds.has(id));
-      const cycleIsComplete = seenIds.length >= pool.length;
+      const cycleIsComplete = seenIds.length >= candidateCyclePool.length;
       const excludedWordIds = cycleIsComplete
         ? currentWordId
           ? [currentWordId]
           : []
         : seenIds;
-      const nextWord = selectRandomWord(level, excludedWordIds);
+      const nextWord = selectRandomWord(
+        level,
+        excludedWordIds,
+        nextMasteryByWord,
+        nextReviewWeakOnly
+      );
 
       setUnlimitedWord(nextWord);
 
@@ -156,14 +247,26 @@ export default function GameScreen() {
     });
   };
 
+  const recordPracticeResult = (practiceWord: WordEntry, result: "correct" | "incorrect") => {
+    setMasteryByWord((currentMastery) => {
+      const nextMastery = getNextMastery(currentMastery, practiceWord, result);
+
+      void saveWordMastery(nextMastery);
+      return nextMastery;
+    });
+
+    setMasteryFeedback(result === "correct" ? "Mastery +1" : "Added to Review");
+  };
+
   useEffect(() => {
     let mounted = true;
 
     async function restoreProgress() {
       try {
-        const [saved, savedShowRomaji] = await Promise.all([
+        const [saved, savedShowRomaji, savedMastery] = await Promise.all([
           loadProgress(),
-          loadShowRomajiPreference()
+          loadShowRomajiPreference(),
+          loadWordMastery()
         ]);
         if (!mounted) {
           return;
@@ -172,6 +275,7 @@ export default function GameScreen() {
         if (savedShowRomaji !== null) {
           setShowRomaji(savedShowRomaji);
         }
+        setMasteryByWord(savedMastery);
 
         if (saved?.date === todayKey && saved.wordId === dailyPuzzle.word.id) {
           setGuesses(saved.guesses);
@@ -194,14 +298,15 @@ export default function GameScreen() {
     };
   }, [dailyPuzzle.word.id, todayKey]);
 
-  const startUnlimitedWord = (level = selectedJLPTLevel) => {
-    resetBoard();
+  const startUnlimitedWord = (level = selectedJLPTLevel, preserveMasteryFeedback = false) => {
+    resetBoard(preserveMasteryFeedback);
     advancePracticeWord(level, unlimitedWord.id);
   };
 
   const skipUnlimitedWord = () => {
     if (!completed) {
       setWordsAttempted((value) => value + 1);
+      recordPracticeResult(unlimitedWord, "incorrect");
     }
 
     startUnlimitedWord();
@@ -231,6 +336,50 @@ export default function GameScreen() {
     resetBoard();
     advancePracticeWord(nextLevel, unlimitedWord.id);
   };
+
+  const handleReviewWeakWordsToggle = () => {
+    const nextReviewWeakOnly = !reviewWeakOnly;
+    setReviewWeakOnly(nextReviewWeakOnly);
+    resetBoard();
+    advancePracticeWord(selectedJLPTLevel, unlimitedWord.id, nextReviewWeakOnly);
+  };
+
+  const revealReviewCard = () => {
+    if (isReviewFlashcardMode && hasReviewWords) {
+      setShowResult(true);
+    }
+  };
+
+  const completeReviewCard = (result: "correct" | "incorrect") => {
+    setWordsAttempted((value) => value + 1);
+
+    if (result === "correct") {
+      setWordsSolved((value) => value + 1);
+    }
+
+    const nextMastery = getNextMastery(masteryByWord, word, result);
+
+    setMasteryByWord(nextMastery);
+    void saveWordMastery(nextMastery);
+    setMasteryFeedback(result === "correct" ? "Mastery +1" : "Added to Review");
+    setShowResult(false);
+    resetBoard(true);
+    advancePracticeWord(selectedJLPTLevel, word.id, true, nextMastery);
+  };
+
+  const reviewCardPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          isReviewFlashcardMode && Math.abs(gestureState.dx) > 18,
+        onPanResponderRelease: (_, gestureState) => {
+          if (Math.abs(gestureState.dx) > 44) {
+            revealReviewCard();
+          }
+        }
+      }),
+    [isReviewFlashcardMode, word.id]
+  );
 
   const incorrectGuessCount = guesses.filter((guess) => guess !== word.hiragana).length;
   const showEmojiHint = Boolean(word.hintEmoji) && incorrectGuessCount >= 2 && !solved;
@@ -324,6 +473,10 @@ export default function GameScreen() {
         solved: nextSolved,
         completed: nextCompleted
       });
+
+      if (nextCompleted) {
+        recordPracticeResult(word, nextSolved ? "correct" : "incorrect");
+      }
     } else {
       if (nextCompleted) {
         setWordsAttempted((value) => value + 1);
@@ -331,6 +484,8 @@ export default function GameScreen() {
         if (nextSolved) {
           setWordsSolved((value) => value + 1);
         }
+
+        recordPracticeResult(word, nextSolved ? "correct" : "incorrect");
       }
     }
 
@@ -372,6 +527,23 @@ export default function GameScreen() {
             >
               <Text style={styles.helpIcon}>💡</Text>
             </Pressable>
+            {gameMode === "unlimited" ? (
+              <Pressable
+                onPress={handleReviewWeakWordsToggle}
+                style={[styles.reviewIconButton, reviewWeakOnly && styles.activeReviewIconButton]}
+                accessibilityRole="button"
+                accessibilityLabel={reviewWeakOnly ? "Show all practice words" : "Review weak words"}
+              >
+                <Text
+                  style={[
+                    styles.reviewIcon,
+                    reviewWeakOnly && styles.activeReviewIcon
+                  ]}
+                >
+                  📝
+                </Text>
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={() => setShowSettings(true)}
               style={styles.settingsButton}
@@ -391,76 +563,112 @@ export default function GameScreen() {
               isShortScreen && styles.shortTitle
             ]}
           >
-            {gameMode === "daily" ? "Jozu" : "Unlimited Practice"}
+            {gameMode === "daily" ? "Jozu" : reviewWeakOnly ? "Review Practice" : "Unlimited Practice"}
           </Text>
           <Text style={styles.kicker}>
             {gameMode === "daily"
               ? `Daily Hiragana Puzzle #${puzzleNumber} · ${dailyPuzzle.jlptLevel}`
-              : `Current word · ${word.jlpt}`}
+              : reviewWeakOnly
+                ? hasReviewWords
+                  ? `Missed words · ${reviewWords.length}`
+                  : "No missed words yet"
+                : `Current word · ${word.jlpt}`}
           </Text>
         </View>
 
         {gameMode === "unlimited" ? (
           <View style={styles.practicePanel}>
-            <View style={styles.practiceActions}>
-              {completed ? (
-                <Pressable onPress={() => startUnlimitedWord()} style={styles.newWordButton}>
-                  <Text style={styles.newWordButtonText}>New Word</Text>
+            {!isReviewFlashcardMode ? (
+              <View style={styles.practiceActions}>
+                {completed ? (
+                  <Pressable onPress={() => startUnlimitedWord()} style={styles.newWordButton}>
+                    <Text style={styles.newWordButtonText}>New Word</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable onPress={skipUnlimitedWord} style={styles.skipButton}>
+                  <Text style={styles.skipButtonText}>Skip</Text>
                 </Pressable>
-              ) : null}
-              <Pressable onPress={skipUnlimitedWord} style={styles.skipButton}>
-                <Text style={styles.skipButtonText}>Skip</Text>
-              </Pressable>
-            </View>
+              </View>
+            ) : null}
             <Text style={styles.practiceStats}>
               Solved {wordsSolved} · Accuracy{" "}
               {wordsAttempted > 0
                 ? `${Math.round((wordsSolved / wordsAttempted) * 100)}%`
                 : "0%"}
             </Text>
+            {masteryFeedback ? <Text style={styles.masteryFeedback}>{masteryFeedback}</Text> : null}
           </View>
         ) : null}
 
-        <GameGrid
-          answerLength={answerChars.length}
-          maxGuesses={maxGuesses}
-          guesses={guesses}
-          currentGuess={currentGuess}
-          results={results}
-          showRomaji={showRomaji}
-          shakeTrigger={shakeTrigger}
-          tileSize={tileSize}
-        />
-
-        <View style={[styles.hintBox, isShortScreen && styles.shortHintBox]}>
-          <Text style={styles.categoryText}>{categoryLabel}</Text>
-          <HintLine visible={showEmojiHint} style={styles.emojiHintText}>
-            {word.hintEmoji}
-          </HintLine>
-          <HintLine visible={showDefinitionTextHint} style={styles.definitionHintText}>
-            {word.definition}
-          </HintLine>
-          {!completed && !showDefinitionTextHint && canTapDefinitionHint ? (
-            <Pressable onPress={() => setShowDefinitionHint(true)} style={styles.hintButton}>
-              <Text style={styles.hintButtonText}>Hint</Text>
-            </Pressable>
-          ) : null}
-          {completed ? (
-            <Text style={styles.hintText}>
-              {gameMode === "daily" ? "Come back tomorrow." : "Tap New Word to keep practicing."}
+        {isReviewFlashcardMode && !hasReviewWords ? (
+          <View style={styles.flashcard}>
+            <Text style={styles.flashcardIcon}>📝</Text>
+            <Text style={styles.flashcardTitle}>All Clear</Text>
+            <Text style={styles.flashcardCategory}>Missed words will appear here.</Text>
+            <Text style={styles.flashcardMeta}>
+              Fail, skip, or miss a Daily or Practice word to add it to review.
             </Text>
-          ) : null}
-        </View>
+          </View>
+        ) : isReviewFlashcardMode ? (
+          <Pressable
+            onPress={revealReviewCard}
+            style={styles.flashcard}
+            accessibilityRole="button"
+            accessibilityLabel="Reveal review card"
+            {...reviewCardPanResponder.panHandlers}
+          >
+            <Text style={styles.flashcardIcon}>{word.hintEmoji ?? "📝"}</Text>
+            <Text style={styles.flashcardTitle}>Review Card</Text>
+            <Text style={styles.flashcardCategory}>{categoryLabel}</Text>
+            <Text style={styles.flashcardMeta}>
+              Mastery {getMasteryLevel(masteryByWord, word.id)} · {reviewResultLabel}
+            </Text>
+            <Text style={styles.flashcardInstruction}>Tap or swipe to reveal</Text>
+          </Pressable>
+        ) : (
+          <>
+            <GameGrid
+              answerLength={answerChars.length}
+              maxGuesses={maxGuesses}
+              guesses={guesses}
+              currentGuess={currentGuess}
+              results={results}
+              showRomaji={showRomaji}
+              shakeTrigger={shakeTrigger}
+              tileSize={tileSize}
+            />
 
-        <KanaKeyboard
-          onKanaPress={handleKanaPress}
-          onEnter={handleEnter}
-          onDelete={handleDelete}
-          keyStatuses={keyStatuses}
-          showRomaji={showRomaji}
-          disabled={loading}
-          compact={isShortScreen || maxGuesses === 6}
-        />
+            <View style={[styles.hintBox, isShortScreen && styles.shortHintBox]}>
+              <Text style={styles.categoryText}>{categoryLabel}</Text>
+              <HintLine visible={showEmojiHint} style={styles.emojiHintText}>
+                {word.hintEmoji}
+              </HintLine>
+              <HintLine visible={showDefinitionTextHint} style={styles.definitionHintText}>
+                {word.definition}
+              </HintLine>
+              {!completed && !showDefinitionTextHint && canTapDefinitionHint ? (
+                <Pressable onPress={() => setShowDefinitionHint(true)} style={styles.hintButton}>
+                  <Text style={styles.hintButtonText}>Hint</Text>
+                </Pressable>
+              ) : null}
+              {completed ? (
+                <Text style={styles.hintText}>
+                  {gameMode === "daily" ? "Come back tomorrow." : "Tap New Word to keep practicing."}
+                </Text>
+              ) : null}
+            </View>
+
+            <KanaKeyboard
+              onKanaPress={handleKanaPress}
+              onEnter={handleEnter}
+              onDelete={handleDelete}
+              keyStatuses={keyStatuses}
+              showRomaji={showRomaji}
+              disabled={loading}
+              compact={isShortScreen || maxGuesses === 6}
+            />
+          </>
+        )}
       </View>
 
       <ResultModal
@@ -472,6 +680,9 @@ export default function GameScreen() {
         solved={solved}
         results={results}
         onClose={() => setShowResult(false)}
+        reviewMode={isReviewFlashcardMode}
+        onReviewCorrect={() => completeReviewCard("correct")}
+        onReviewIncorrect={() => completeReviewCard("incorrect")}
       />
 
       <Modal
@@ -626,6 +837,26 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 22
   },
+  reviewIconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e9e0d2"
+  },
+  activeReviewIconButton: {
+    backgroundColor: "#2f4f4a"
+  },
+  reviewIcon: {
+    color: "#2b2a27",
+    fontSize: 24,
+    fontWeight: "900",
+    lineHeight: 26
+  },
+  activeReviewIcon: {
+    color: "#ffffff"
+  },
   segmentedControl: {
     flexDirection: "row",
     borderWidth: 2,
@@ -776,6 +1007,51 @@ const styles = StyleSheet.create({
     color: "#817565",
     fontSize: 12,
     fontWeight: "800"
+  },
+  masteryFeedback: {
+    color: "#2f4f4a",
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  flashcard: {
+    width: "86%",
+    maxWidth: 360,
+    minHeight: 310,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#ded6ca",
+    backgroundColor: "#fffdf8",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    padding: 22,
+    marginTop: 12
+  },
+  flashcardIcon: {
+    fontSize: 54,
+    lineHeight: 62
+  },
+  flashcardTitle: {
+    color: "#25231f",
+    fontSize: 26,
+    fontWeight: "900"
+  },
+  flashcardCategory: {
+    color: "#5d5448",
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  flashcardMeta: {
+    color: "#817565",
+    fontSize: 13,
+    fontWeight: "800",
+    textAlign: "center"
+  },
+  flashcardInstruction: {
+    color: "#2f4f4a",
+    fontSize: 14,
+    fontWeight: "900",
+    paddingTop: 8
   },
   hintBox: {
     minHeight: 56,

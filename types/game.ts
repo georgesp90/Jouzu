@@ -27,3 +27,10 @@ export type DailyPuzzle = {
   word: WordEntry;
   jlptLevel: JLPTLevel;
 };
+
+export type WordMastery = {
+  wordId: string;
+  masteryLevel: number;
+  lastResult: "correct" | "incorrect";
+  lastSeen: number;
+};

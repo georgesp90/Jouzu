@@ -1020,6 +1020,1026 @@ export const words: WordEntry[] = [
     definition: "facts or knowledge about something",
     jlpt: "N3",
     hintEmoji: "ℹ️"
+  },
+  {
+    id: "machi-001",
+    hiragana: "まち",
+    romaji: "machi",
+    english: "town",
+    category: "place",
+    definition: "a place where many people live and work",
+    jlpt: "N5",
+    hintEmoji: "🏘️"
+  },
+  {
+    id: "mise-001",
+    hiragana: "みせ",
+    romaji: "mise",
+    english: "shop",
+    category: "place",
+    definition: "a place where things are sold",
+    jlpt: "N5",
+    hintEmoji: "🏬"
+  },
+  {
+    id: "kaisha-001",
+    hiragana: "かいしゃ",
+    romaji: "kaisha",
+    english: "company",
+    category: "work",
+    definition: "a business organization",
+    jlpt: "N5",
+    hintEmoji: "🏢"
+  },
+  {
+    id: "kouen-001",
+    hiragana: "こうえん",
+    romaji: "kouen",
+    english: "park",
+    category: "place",
+    definition: "an outdoor public space",
+    jlpt: "N5",
+    hintEmoji: "🌳"
+  },
+  {
+    id: "toire-001",
+    hiragana: "といれ",
+    romaji: "toire",
+    english: "toilet",
+    category: "place",
+    definition: "a bathroom or restroom",
+    jlpt: "N5",
+    hintEmoji: "🚻"
+  },
+  {
+    id: "kyou-001",
+    hiragana: "きょう",
+    romaji: "kyou",
+    english: "today",
+    category: "time",
+    definition: "this day",
+    jlpt: "N5",
+    hintEmoji: "📅"
+  },
+  {
+    id: "ashita-001",
+    hiragana: "あした",
+    romaji: "ashita",
+    english: "tomorrow",
+    category: "time",
+    definition: "the day after today",
+    jlpt: "N5",
+    hintEmoji: "➡️"
+  },
+  {
+    id: "kinou-001",
+    hiragana: "きのう",
+    romaji: "kinou",
+    english: "yesterday",
+    category: "time",
+    definition: "the day before today",
+    jlpt: "N5",
+    hintEmoji: "⬅️"
+  },
+  {
+    id: "tokei-001",
+    hiragana: "とけい",
+    romaji: "tokei",
+    english: "clock",
+    category: "object",
+    definition: "an object that shows time",
+    jlpt: "N5",
+    hintEmoji: "⏰"
+  },
+  {
+    id: "kaban-001",
+    hiragana: "かばん",
+    romaji: "kaban",
+    english: "bag",
+    category: "object",
+    definition: "something used to carry items",
+    jlpt: "N5",
+    hintEmoji: "🎒"
+  },
+  {
+    id: "enpitsu-001",
+    hiragana: "えんぴつ",
+    romaji: "enpitsu",
+    english: "pencil",
+    category: "object",
+    definition: "a tool for writing or drawing",
+    jlpt: "N5",
+    hintEmoji: "✏️"
+  },
+  {
+    id: "kagi-001",
+    hiragana: "かぎ",
+    romaji: "kagi",
+    english: "key",
+    category: "object",
+    definition: "an object used to open a lock",
+    jlpt: "N5",
+    hintEmoji: "🔑"
+  },
+  {
+    id: "saifu-001",
+    hiragana: "さいふ",
+    romaji: "saifu",
+    english: "wallet",
+    category: "object",
+    definition: "a small case for money",
+    jlpt: "N5",
+    hintEmoji: "👛"
+  },
+  {
+    id: "megane-001",
+    hiragana: "めがね",
+    romaji: "megane",
+    english: "glasses",
+    category: "object",
+    definition: "lenses worn to help vision",
+    jlpt: "N5",
+    hintEmoji: "👓"
+  },
+  {
+    id: "kao-001",
+    hiragana: "かお",
+    romaji: "kao",
+    english: "face",
+    category: "body",
+    definition: "the front part of the head",
+    jlpt: "N5",
+    hintEmoji: "🙂"
+  },
+  {
+    id: "te-001",
+    hiragana: "て",
+    romaji: "te",
+    english: "hand",
+    category: "body",
+    definition: "the body part used to hold things",
+    jlpt: "N5",
+    hintEmoji: "✋"
+  },
+  {
+    id: "ashi-001",
+    hiragana: "あし",
+    romaji: "ashi",
+    english: "leg",
+    category: "body",
+    definition: "a body part used for standing or walking",
+    jlpt: "N5",
+    hintEmoji: "🦵"
+  },
+  {
+    id: "me-001",
+    hiragana: "め",
+    romaji: "me",
+    english: "eye",
+    category: "body",
+    definition: "the body part used for seeing",
+    jlpt: "N5",
+    hintEmoji: "👁️"
+  },
+  {
+    id: "mimi-001",
+    hiragana: "みみ",
+    romaji: "mimi",
+    english: "ear",
+    category: "body",
+    definition: "the body part used for hearing",
+    jlpt: "N5",
+    hintEmoji: "👂"
+  },
+  {
+    id: "kuchi-001",
+    hiragana: "くち",
+    romaji: "kuchi",
+    english: "mouth",
+    category: "body",
+    definition: "the body part used for eating and speaking",
+    jlpt: "N5",
+    hintEmoji: "👄"
+  },
+  {
+    id: "ushi-001",
+    hiragana: "うし",
+    romaji: "ushi",
+    english: "cow",
+    category: "animal",
+    definition: "a large farm animal",
+    jlpt: "N5",
+    hintEmoji: "🐄"
+  },
+  {
+    id: "uma-001",
+    hiragana: "うま",
+    romaji: "uma",
+    english: "horse",
+    category: "animal",
+    definition: "a large animal people can ride",
+    jlpt: "N5",
+    hintEmoji: "🐴"
+  },
+  {
+    id: "tori-001",
+    hiragana: "とり",
+    romaji: "tori",
+    english: "bird",
+    category: "animal",
+    definition: "an animal with wings and feathers",
+    jlpt: "N5",
+    hintEmoji: "🐦"
+  },
+  {
+    id: "mushi-001",
+    hiragana: "むし",
+    romaji: "mushi",
+    english: "insect",
+    category: "animal",
+    definition: "a small animal with many legs",
+    jlpt: "N5",
+    hintEmoji: "🐛"
+  },
+  {
+    id: "gohan-001",
+    hiragana: "ごはん",
+    romaji: "gohan",
+    english: "rice",
+    category: "food",
+    definition: "cooked rice or a meal",
+    jlpt: "N5",
+    hintEmoji: "🍚"
+  },
+  {
+    id: "ocha-001",
+    hiragana: "おちゃ",
+    romaji: "ocha",
+    english: "tea",
+    category: "drink",
+    definition: "a warm drink made from leaves",
+    jlpt: "N5",
+    hintEmoji: "🍵"
+  },
+  {
+    id: "kaku-001",
+    hiragana: "かく",
+    romaji: "kaku",
+    english: "to write",
+    category: "verb",
+    definition: "to make letters or words",
+    jlpt: "N5",
+    hintEmoji: "✍️"
+  },
+  {
+    id: "hanasu-001",
+    hiragana: "はなす",
+    romaji: "hanasu",
+    english: "to speak",
+    category: "verb",
+    definition: "to say words",
+    jlpt: "N5",
+    hintEmoji: "🗣️"
+  },
+  {
+    id: "kanashii-001",
+    hiragana: "かなしい",
+    romaji: "kanashii",
+    english: "sad",
+    category: "feeling",
+    definition: "feeling unhappy",
+    jlpt: "N4",
+    hintEmoji: "😢"
+  },
+  {
+    id: "ureshii-001",
+    hiragana: "うれしい",
+    romaji: "ureshii",
+    english: "happy",
+    category: "feeling",
+    definition: "feeling glad",
+    jlpt: "N4",
+    hintEmoji: "😊"
+  },
+  {
+    id: "hazukashii-001",
+    hiragana: "はずかしい",
+    romaji: "hazukashii",
+    english: "embarrassed",
+    category: "feeling",
+    definition: "feeling shy or ashamed",
+    jlpt: "N4",
+    hintEmoji: "🫣"
+  },
+  {
+    id: "nemui-001",
+    hiragana: "ねむい",
+    romaji: "nemui",
+    english: "sleepy",
+    category: "feeling",
+    definition: "wanting to sleep",
+    jlpt: "N4",
+    hintEmoji: "😴"
+  },
+  {
+    id: "kowai-001",
+    hiragana: "こわい",
+    romaji: "kowai",
+    english: "scary",
+    category: "feeling",
+    definition: "causing fear",
+    jlpt: "N4",
+    hintEmoji: "😨"
+  },
+  {
+    id: "kibun-001",
+    hiragana: "きぶん",
+    romaji: "kibun",
+    english: "mood",
+    category: "feeling",
+    definition: "how someone feels",
+    jlpt: "N4",
+    hintEmoji: "🙂"
+  },
+  {
+    id: "renshuu-001",
+    hiragana: "れんしゅう",
+    romaji: "renshuu",
+    english: "practice",
+    category: "study",
+    definition: "repeated work to improve a skill",
+    jlpt: "N4",
+    hintEmoji: "🏋️"
+  },
+  {
+    id: "shiken-001",
+    hiragana: "しけん",
+    romaji: "shiken",
+    english: "exam",
+    category: "study",
+    definition: "a test of knowledge or skill",
+    jlpt: "N4",
+    hintEmoji: "📝"
+  },
+  {
+    id: "shukudai-001",
+    hiragana: "しゅくだい",
+    romaji: "shukudai",
+    english: "homework",
+    category: "study",
+    definition: "schoolwork done outside class",
+    jlpt: "N4",
+    hintEmoji: "📚"
+  },
+  {
+    id: "jugyou-001",
+    hiragana: "じゅぎょう",
+    romaji: "jugyou",
+    english: "class",
+    category: "study",
+    definition: "a lesson at school",
+    jlpt: "N4",
+    hintEmoji: "🏫"
+  },
+  {
+    id: "seito-001",
+    hiragana: "せいと",
+    romaji: "seito",
+    english: "student",
+    category: "person",
+    definition: "a person who studies at school",
+    jlpt: "N4",
+    hintEmoji: "🧑‍🎓"
+  },
+  {
+    id: "senpai-001",
+    hiragana: "せんぱい",
+    romaji: "senpai",
+    english: "senior",
+    category: "person",
+    definition: "someone with more experience in a group",
+    jlpt: "N4",
+    hintEmoji: "🧑‍🏫"
+  },
+  {
+    id: "tenin-001",
+    hiragana: "てんいん",
+    romaji: "tenin",
+    english: "clerk",
+    category: "person",
+    definition: "a person who works in a store",
+    jlpt: "N4",
+    hintEmoji: "🧑‍💼"
+  },
+  {
+    id: "shachou-001",
+    hiragana: "しゃちょう",
+    romaji: "shachou",
+    english: "company president",
+    category: "person",
+    definition: "the head of a company",
+    jlpt: "N4",
+    hintEmoji: "👔"
+  },
+  {
+    id: "koutsuu-001",
+    hiragana: "こうつう",
+    romaji: "koutsuu",
+    english: "traffic",
+    category: "transport",
+    definition: "movement of vehicles and people",
+    jlpt: "N4",
+    hintEmoji: "🚦"
+  },
+  {
+    id: "jidousha-001",
+    hiragana: "じどうしゃ",
+    romaji: "jidousha",
+    english: "automobile",
+    category: "transport",
+    definition: "a car or motor vehicle",
+    jlpt: "N4",
+    hintEmoji: "🚗"
+  },
+  {
+    id: "jikoku-001",
+    hiragana: "じこく",
+    romaji: "jikoku",
+    english: "time",
+    category: "time",
+    definition: "a specific point on a clock",
+    jlpt: "N4",
+    hintEmoji: "🕒"
+  },
+  {
+    id: "yotei-001",
+    hiragana: "よてい",
+    romaji: "yotei",
+    english: "plan",
+    category: "time",
+    definition: "something arranged for the future",
+    jlpt: "N4",
+    hintEmoji: "📆"
+  },
+  {
+    id: "sanpo-001",
+    hiragana: "さんぽ",
+    romaji: "sanpo",
+    english: "walk",
+    category: "activity",
+    definition: "a short walk for pleasure",
+    jlpt: "N4",
+    hintEmoji: "🚶"
+  },
+  {
+    id: "undou-001",
+    hiragana: "うんどう",
+    romaji: "undou",
+    english: "exercise",
+    category: "activity",
+    definition: "physical activity for health",
+    jlpt: "N4",
+    hintEmoji: "🏃"
+  },
+  {
+    id: "sentaku-001",
+    hiragana: "せんたく",
+    romaji: "sentaku",
+    english: "laundry",
+    category: "home",
+    definition: "washing clothes",
+    jlpt: "N4",
+    hintEmoji: "🧺"
+  },
+  {
+    id: "souji-001",
+    hiragana: "そうじ",
+    romaji: "souji",
+    english: "cleaning",
+    category: "home",
+    definition: "making a place clean",
+    jlpt: "N4",
+    hintEmoji: "🧹"
+  },
+  {
+    id: "kaimono-001",
+    hiragana: "かいもの",
+    romaji: "kaimono",
+    english: "shopping",
+    category: "activity",
+    definition: "buying things at a store",
+    jlpt: "N4",
+    hintEmoji: "🛍️"
+  },
+  {
+    id: "yakusoku-001",
+    hiragana: "やくそく",
+    romaji: "yakusoku",
+    english: "promise",
+    category: "communication",
+    definition: "an agreement to do something",
+    jlpt: "N4",
+    hintEmoji: "🤝"
+  },
+  {
+    id: "shitsumon-001",
+    hiragana: "しつもん",
+    romaji: "shitsumon",
+    english: "question",
+    category: "communication",
+    definition: "something asked to get information",
+    jlpt: "N4",
+    hintEmoji: "❓"
+  },
+  {
+    id: "henji-001",
+    hiragana: "へんじ",
+    romaji: "henji",
+    english: "reply",
+    category: "communication",
+    definition: "an answer to someone",
+    jlpt: "N4",
+    hintEmoji: "💬"
+  },
+  {
+    id: "shirase-001",
+    hiragana: "しらせ",
+    romaji: "shirase",
+    english: "notice",
+    category: "communication",
+    definition: "news or information given to someone",
+    jlpt: "N4",
+    hintEmoji: "📣"
+  },
+  {
+    id: "seikatsu-001",
+    hiragana: "せいかつ",
+    romaji: "seikatsu",
+    english: "daily life",
+    category: "life",
+    definition: "the way someone lives day to day",
+    jlpt: "N4",
+    hintEmoji: "🏡"
+  },
+  {
+    id: "shumi-001",
+    hiragana: "しゅみ",
+    romaji: "shumi",
+    english: "hobby",
+    category: "life",
+    definition: "an activity someone enjoys",
+    jlpt: "N4",
+    hintEmoji: "🎨"
+  },
+  {
+    id: "riyu-001",
+    hiragana: "りゆう",
+    romaji: "riyu",
+    english: "reason",
+    category: "concept",
+    definition: "why something happens",
+    jlpt: "N4",
+    hintEmoji: "💭"
+  },
+  {
+    id: "goukaku-001",
+    hiragana: "ごうかく",
+    romaji: "goukaku",
+    english: "passing",
+    category: "study",
+    definition: "success on a test or exam",
+    jlpt: "N3",
+    hintEmoji: "✅"
+  },
+  {
+    id: "fugoukaku-001",
+    hiragana: "ふごうかく",
+    romaji: "fugoukaku",
+    english: "failing",
+    category: "study",
+    definition: "not passing a test or exam",
+    jlpt: "N3",
+    hintEmoji: "❌"
+  },
+  {
+    id: "mokuteki-001",
+    hiragana: "もくてき",
+    romaji: "mokuteki",
+    english: "purpose",
+    category: "concept",
+    definition: "the reason for doing something",
+    jlpt: "N3",
+    hintEmoji: "🎯"
+  },
+  {
+    id: "mokuhyou-001",
+    hiragana: "もくひょう",
+    romaji: "mokuhyou",
+    english: "goal",
+    category: "concept",
+    definition: "something someone wants to achieve",
+    jlpt: "N3",
+    hintEmoji: "🏁"
+  },
+  {
+    id: "kikai-001",
+    hiragana: "きかい",
+    romaji: "kikai",
+    english: "opportunity",
+    category: "concept",
+    definition: "a good chance to do something",
+    jlpt: "N3",
+    hintEmoji: "🚪"
+  },
+  {
+    id: "houhou-001",
+    hiragana: "ほうほう",
+    romaji: "houhou",
+    english: "method",
+    category: "concept",
+    definition: "a way of doing something",
+    jlpt: "N3",
+    hintEmoji: "🛠️"
+  },
+  {
+    id: "joutai-001",
+    hiragana: "じょうたい",
+    romaji: "joutai",
+    english: "condition",
+    category: "concept",
+    definition: "the state something is in",
+    jlpt: "N3",
+    hintEmoji: "📊"
+  },
+  {
+    id: "baai-001",
+    hiragana: "ばあい",
+    romaji: "baai",
+    english: "case",
+    category: "concept",
+    definition: "a situation or circumstance",
+    jlpt: "N3",
+    hintEmoji: "📌"
+  },
+  {
+    id: "kekka-001",
+    hiragana: "けっか",
+    romaji: "kekka",
+    english: "result",
+    category: "concept",
+    definition: "what happens because of something",
+    jlpt: "N3",
+    hintEmoji: "📈"
+  },
+  {
+    id: "genin-001",
+    hiragana: "げんいん",
+    romaji: "genin",
+    english: "cause",
+    category: "concept",
+    definition: "the reason something happens",
+    jlpt: "N3",
+    hintEmoji: "🔎"
+  },
+  {
+    id: "henka-001",
+    hiragana: "へんか",
+    romaji: "henka",
+    english: "change",
+    category: "concept",
+    definition: "a difference from before",
+    jlpt: "N3",
+    hintEmoji: "🔄"
+  },
+  {
+    id: "seichou-001",
+    hiragana: "せいちょう",
+    romaji: "seichou",
+    english: "growth",
+    category: "life",
+    definition: "the process of becoming bigger or better",
+    jlpt: "N3",
+    hintEmoji: "🌱"
+  },
+  {
+    id: "doryoku-001",
+    hiragana: "どりょく",
+    romaji: "doryoku",
+    english: "effort",
+    category: "life",
+    definition: "hard work toward a goal",
+    jlpt: "N3",
+    hintEmoji: "💪"
+  },
+  {
+    id: "sekinin-001",
+    hiragana: "せきにん",
+    romaji: "sekinin",
+    english: "responsibility",
+    category: "work",
+    definition: "a duty someone should handle",
+    jlpt: "N3",
+    hintEmoji: "📋"
+  },
+  {
+    id: "renraku-001",
+    hiragana: "れんらく",
+    romaji: "renraku",
+    english: "contact",
+    category: "communication",
+    definition: "communication with someone",
+    jlpt: "N3",
+    hintEmoji: "📞"
+  },
+  {
+    id: "houkoku-001",
+    hiragana: "ほうこく",
+    romaji: "houkoku",
+    english: "report",
+    category: "communication",
+    definition: "giving information about what happened",
+    jlpt: "N3",
+    hintEmoji: "🧾"
+  },
+  {
+    id: "setsuzoku-001",
+    hiragana: "せつぞく",
+    romaji: "setsuzoku",
+    english: "connection",
+    category: "technology",
+    definition: "a link between things or systems",
+    jlpt: "N3",
+    hintEmoji: "🔌"
+  },
+  {
+    id: "ao-001",
+    hiragana: "あお",
+    romaji: "ao",
+    english: "blue",
+    category: "color",
+    definition: "the color of a clear sky",
+    jlpt: "N5",
+    hintEmoji: "🔵"
+  },
+  {
+    id: "aka-001",
+    hiragana: "あか",
+    romaji: "aka",
+    english: "red",
+    category: "color",
+    definition: "the color of fire or blood",
+    jlpt: "N5",
+    hintEmoji: "🔴"
+  },
+  {
+    id: "shiro-001",
+    hiragana: "しろ",
+    romaji: "shiro",
+    english: "white",
+    category: "color",
+    definition: "the color of snow",
+    jlpt: "N5",
+    hintEmoji: "⚪"
+  },
+  {
+    id: "kuro-001",
+    hiragana: "くろ",
+    romaji: "kuro",
+    english: "black",
+    category: "color",
+    definition: "the darkest color",
+    jlpt: "N5",
+    hintEmoji: "⚫"
+  },
+  {
+    id: "kiiro-001",
+    hiragana: "きいろ",
+    romaji: "kiiro",
+    english: "yellow",
+    category: "color",
+    definition: "the color of lemons or sunlight",
+    jlpt: "N5",
+    hintEmoji: "🟡"
+  },
+  {
+    id: "midori-001",
+    hiragana: "みどり",
+    romaji: "midori",
+    english: "green",
+    category: "color",
+    definition: "the color of leaves",
+    jlpt: "N5",
+    hintEmoji: "🟢"
+  },
+  {
+    id: "kita-001",
+    hiragana: "きた",
+    romaji: "kita",
+    english: "north",
+    category: "place",
+    definition: "one of the four main directions",
+    jlpt: "N5",
+    hintEmoji: "🧭"
+  },
+  {
+    id: "minami-001",
+    hiragana: "みなみ",
+    romaji: "minami",
+    english: "south",
+    category: "place",
+    definition: "one of the four main directions",
+    jlpt: "N5",
+    hintEmoji: "🧭"
+  },
+  {
+    id: "higashi-001",
+    hiragana: "ひがし",
+    romaji: "higashi",
+    english: "east",
+    category: "place",
+    definition: "the direction where the sun rises",
+    jlpt: "N5",
+    hintEmoji: "🌅"
+  },
+  {
+    id: "nishi-001",
+    hiragana: "にし",
+    romaji: "nishi",
+    english: "west",
+    category: "place",
+    definition: "the direction where the sun sets",
+    jlpt: "N5",
+    hintEmoji: "🌇"
+  },
+  {
+    id: "michi-001",
+    hiragana: "みち",
+    romaji: "michi",
+    english: "road",
+    category: "place",
+    definition: "a path for travel",
+    jlpt: "N5",
+    hintEmoji: "🛣️"
+  },
+  {
+    id: "niwa-001",
+    hiragana: "にわ",
+    romaji: "niwa",
+    english: "garden",
+    category: "place",
+    definition: "an outdoor space with plants",
+    jlpt: "N5",
+    hintEmoji: "🌷"
+  },
+  {
+    id: "keshigomu-001",
+    hiragana: "けしごむ",
+    romaji: "keshigomu",
+    english: "eraser",
+    category: "object",
+    definition: "an object used to remove pencil marks",
+    jlpt: "N5",
+    hintEmoji: "🧽"
+  },
+  {
+    id: "tegami-001",
+    hiragana: "てがみ",
+    romaji: "tegami",
+    english: "letter",
+    category: "object",
+    definition: "a written message sent to someone",
+    jlpt: "N5",
+    hintEmoji: "✉️"
+  },
+  {
+    id: "setsumei-kai-001",
+    hiragana: "せつめいかい",
+    romaji: "setsumeikai",
+    english: "briefing",
+    category: "communication",
+    definition: "a meeting where something is explained",
+    jlpt: "N4",
+    hintEmoji: "🗣️"
+  },
+  {
+    id: "annai-001",
+    hiragana: "あんない",
+    romaji: "annai",
+    english: "guidance",
+    category: "communication",
+    definition: "help showing someone where to go or what to do",
+    jlpt: "N4",
+    hintEmoji: "🪧"
+  },
+  {
+    id: "uketsuke-001",
+    hiragana: "うけつけ",
+    romaji: "uketsuke",
+    english: "reception",
+    category: "place",
+    definition: "a desk where visitors are received",
+    jlpt: "N4",
+    hintEmoji: "🛎️"
+  },
+  {
+    id: "kaijou-001",
+    hiragana: "かいじょう",
+    romaji: "kaijou",
+    english: "venue",
+    category: "place",
+    definition: "a place where an event is held",
+    jlpt: "N4",
+    hintEmoji: "🏟️"
+  },
+  {
+    id: "shiryou-001",
+    hiragana: "しりょう",
+    romaji: "shiryou",
+    english: "materials",
+    category: "work",
+    definition: "documents or resources used for reference",
+    jlpt: "N4",
+    hintEmoji: "📄"
+  },
+  {
+    id: "chuusha-001",
+    hiragana: "ちゅうしゃ",
+    romaji: "chuusha",
+    english: "injection",
+    category: "health",
+    definition: "medicine given with a needle",
+    jlpt: "N4",
+    hintEmoji: "💉"
+  },
+  {
+    id: "netsu-001",
+    hiragana: "ねつ",
+    romaji: "netsu",
+    english: "fever",
+    category: "health",
+    definition: "a high body temperature",
+    jlpt: "N4",
+    hintEmoji: "🤒"
+  },
+  {
+    id: "kega-001",
+    hiragana: "けが",
+    romaji: "kega",
+    english: "injury",
+    category: "health",
+    definition: "damage to the body",
+    jlpt: "N4",
+    hintEmoji: "🩹"
+  },
+  {
+    id: "kouka-001",
+    hiragana: "こうか",
+    romaji: "kouka",
+    english: "effect",
+    category: "concept",
+    definition: "a result or influence caused by something",
+    jlpt: "N3",
+    hintEmoji: "✨"
+  },
+  {
+    id: "eikyou-001",
+    hiragana: "えいきょう",
+    romaji: "eikyou",
+    english: "influence",
+    category: "concept",
+    definition: "the power to affect something",
+    jlpt: "N3",
+    hintEmoji: "🌊"
+  },
+  {
+    id: "kanri-001",
+    hiragana: "かんり",
+    romaji: "kanri",
+    english: "management",
+    category: "work",
+    definition: "controlling or organizing something",
+    jlpt: "N3",
+    hintEmoji: "📊"
+  },
+  {
+    id: "taido-001",
+    hiragana: "たいど",
+    romaji: "taido",
+    english: "attitude",
+    category: "person",
+    definition: "the way someone thinks or behaves",
+    jlpt: "N3",
+    hintEmoji: "🧍"
+  },
+  {
+    id: "koudou-001",
+    hiragana: "こうどう",
+    romaji: "koudou",
+    english: "action",
+    category: "action",
+    definition: "something someone does",
+    jlpt: "N3",
+    hintEmoji: "🏃"
   }
 ];
 

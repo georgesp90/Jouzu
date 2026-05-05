@@ -10,6 +10,9 @@ type ResultModalProps = {
   solved: boolean;
   results: TileStatus[][];
   onClose: () => void;
+  reviewMode?: boolean;
+  onReviewCorrect?: () => void;
+  onReviewIncorrect?: () => void;
 };
 
 const resultEmoji: Record<TileStatus, string> = {
@@ -50,7 +53,10 @@ export function ResultModal({
   maxGuesses,
   solved,
   results,
-  onClose
+  onClose,
+  reviewMode = false,
+  onReviewCorrect,
+  onReviewIncorrect
 }: ResultModalProps) {
   const shareResult = async () => {
     await Share.share({
@@ -62,7 +68,9 @@ export function ResultModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.modal}>
-          <Text style={styles.eyebrow}>{solved ? "Solved" : "Today's word"}</Text>
+          <Text style={styles.eyebrow}>
+            {reviewMode ? "Review card" : solved ? "Solved" : "Today's word"}
+          </Text>
           <Text style={styles.hiragana}>{word.hiragana}</Text>
           <Text style={styles.translation}>
             {word.romaji} - {word.english}
@@ -72,18 +80,35 @@ export function ResultModal({
             <Text style={styles.infoText}>Category: {titleCase(word.category)}</Text>
             <Text style={styles.infoText}>JLPT: {word.jlpt}</Text>
             <Text style={styles.infoText}>Definition: {word.definition}</Text>
-            <Text style={styles.infoText}>
-              Guesses: {solved ? guessCount : "X"}/{maxGuesses}
-            </Text>
+            {reviewMode ? (
+              <Text style={styles.infoText}>Mark whether you knew this word.</Text>
+            ) : (
+              <Text style={styles.infoText}>
+                Guesses: {solved ? guessCount : "X"}/{maxGuesses}
+              </Text>
+            )}
           </View>
 
           <View style={styles.actions}>
-            <Pressable onPress={shareResult} style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>Share</Text>
-            </Pressable>
-            <Pressable onPress={onClose} style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>Close</Text>
-            </Pressable>
+            {reviewMode ? (
+              <>
+                <Pressable onPress={onReviewCorrect} style={styles.primaryButton}>
+                  <Text style={styles.primaryButtonText}>Got it</Text>
+                </Pressable>
+                <Pressable onPress={onReviewIncorrect} style={styles.secondaryButton}>
+                  <Text style={styles.secondaryButtonText}>Missed</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Pressable onPress={shareResult} style={styles.primaryButton}>
+                  <Text style={styles.primaryButtonText}>Share</Text>
+                </Pressable>
+                <Pressable onPress={onClose} style={styles.secondaryButton}>
+                  <Text style={styles.secondaryButtonText}>Close</Text>
+                </Pressable>
+              </>
+            )}
           </View>
         </View>
       </View>
