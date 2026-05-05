@@ -16,6 +16,12 @@ import { KanaKeyboard } from "@/components/KanaKeyboard";
 import { ResultModal } from "@/components/ResultModal";
 import { acceptedGuesses } from "@/data/acceptedGuesses";
 import { wordPools } from "@/data/words";
+import {
+  ensureAnonymousUser,
+  hasPlayedToday,
+  initUserIfNeeded,
+  saveDailyPlayForCurrentUser
+} from "@/firebase/services";
 import { DailyProgress, JLPTLevel, TileStatus, WordEntry, WordMastery } from "@/types/game";
 import { evaluateGuess } from "@/utils/evaluateGuess";
 import { getDailyPuzzle } from "@/utils/getDailyPuzzle";
@@ -184,6 +190,7 @@ export default function GameScreen() {
   const [wordsAttempted, setWordsAttempted] = useState(0);
   const [masteryFeedback, setMasteryFeedback] = useState("");
   const [shakeTrigger, setShakeTrigger] = useState(0);
+  const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
   const maxTileSize = maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48;
@@ -296,12 +303,22 @@ export default function GameScreen() {
         }
         setMasteryByWord(savedMastery);
 
+        const uid = await ensureAnonymousUser();
+
+        if (uid) {
+          setFirebaseUid(uid);
+          await initUserIfNeeded(uid);
+        }
+
         if (saved?.date === todayKey && saved.wordId === dailyPuzzle.word.id) {
           setGuesses(saved.guesses);
           setResults(saved.results);
           setSolved(saved.solved);
           setCompleted(saved.completed);
           setShowResult(saved.completed);
+        } else if (uid && (await hasPlayedToday(uid, todayKey))) {
+          setCompleted(true);
+          setShowResult(true);
         }
       } finally {
         if (mounted) {
@@ -343,6 +360,13 @@ export default function GameScreen() {
           setSolved(saved.solved);
           setCompleted(saved.completed);
           setShowResult(saved.completed);
+        } else if (firebaseUid) {
+          void hasPlayedToday(firebaseUid, todayKey).then((playedToday) => {
+            if (playedToday) {
+              setCompleted(true);
+              setShowResult(true);
+            }
+          });
         }
       });
     } else {
@@ -508,6 +532,13 @@ export default function GameScreen() {
 
       if (nextCompleted) {
         recordPracticeResult(word, nextSolved ? "correct" : "incorrect");
+        void saveDailyPlayForCurrentUser({
+          date: todayKey,
+          wordId: word.id,
+          won: nextSolved,
+          guessesUsed: nextGuesses.length,
+          hintUsed: showDefinitionHint || incorrectGuessCount >= 2
+        });
       }
     } else {
       if (nextCompleted) {
