@@ -21,6 +21,8 @@ const statusStyles: Record<TileStatus, { backgroundColor: string; borderColor: s
   empty: { backgroundColor: "#fffdf8", borderColor: "#d8d1c6", color: "#2b2a27" }
 };
 
+const SMALL_KANA = new Set(["ぁ", "ぃ", "ぅ", "ぇ", "ぉ", "ゃ", "ゅ", "ょ", "っ", "ゎ"]);
+
 export function GameGrid({
   answerLength,
   maxGuesses,
@@ -73,6 +75,7 @@ export function GameGrid({
               const colors = statusStyles[status];
               const kana = rowChars[columnIndex] ?? "";
               const romaji = kana ? getKanaRomaji(kana) : "";
+              const isSmallKana = SMALL_KANA.has(kana);
 
               return (
                 <View
@@ -87,7 +90,15 @@ export function GameGrid({
                     }
                   ]}
                 >
-                  <Text style={[styles.tileKana, { color: colors.color }]}>{kana}</Text>
+                  <Text
+                    style={[
+                      styles.tileKana,
+                      isSmallKana && styles.smallKana,
+                      { color: colors.color }
+                    ]}
+                  >
+                    {kana}
+                  </Text>
                   {showRomaji && romaji ? (
                     <Text style={[styles.tileRomaji, { color: colors.color }]}>{romaji}</Text>
                   ) : null}
@@ -122,6 +133,11 @@ const styles = StyleSheet.create({
     fontSize: 27,
     fontWeight: "700",
     lineHeight: 30
+  },
+  smallKana: {
+    fontSize: 20,
+    lineHeight: 24,
+    transform: [{ translateY: 2 }]
   },
   tileRomaji: {
     fontSize: 12,

@@ -7,8 +7,16 @@ export type WordEntry = {
   english: string;
   category: string;
   definition: string;
+  refinedDefinition?: string;
   jlpt: JLPTLevel;
   hintEmoji?: string;
+  closeAnswers?: string[];
+  confusableWords?: {
+    word: string;
+    romaji: string;
+    english: string;
+    note?: string;
+  }[];
 };
 
 export type TileStatus = "correct" | "present" | "absent" | "empty";

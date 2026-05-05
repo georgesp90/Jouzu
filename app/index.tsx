@@ -73,6 +73,25 @@ function getNextMastery(
   };
 }
 
+function getConfusableWord(word: WordEntry, guess: string) {
+  const closeAnswer = word.confusableWords?.find((confusable) => confusable.word === guess);
+
+  if (closeAnswer) {
+    return closeAnswer;
+  }
+
+  if (word.closeAnswers?.includes(guess)) {
+    return {
+      word: guess,
+      romaji: "",
+      english: "a close answer",
+      note: `This word is more specifically ${word.english}.`
+    };
+  }
+
+  return null;
+}
+
 function selectWeightedWord(
   candidates: WordEntry[],
   masteryByWord: Record<string, WordMastery>
@@ -387,6 +406,7 @@ export default function GameScreen() {
     !solved && (showDefinitionHint || incorrectGuessCount >= (word.hintEmoji ? 3 : 2));
   const canTapDefinitionHint = hintModeEnabled || incorrectGuessCount >= 2;
   const categoryLabel = `Category: ${word.category}`;
+  const definitionText = word.refinedDefinition ?? word.definition;
   const keyStatuses = useMemo(() => {
     const priority: Record<TileStatus, number> = {
       empty: 0,
@@ -446,6 +466,18 @@ export default function GameScreen() {
 
     if (!KANA_ONLY.test(currentGuess)) {
       Alert.alert("Kana only", "Use hiragana for this puzzle.");
+      return;
+    }
+
+    const confusableWord = getConfusableWord(word, currentGuess);
+
+    if (confusableWord) {
+      const meaningText = confusableWord.english
+        ? `${confusableWord.word} means ${confusableWord.english}.`
+        : `${confusableWord.word} is close.`;
+
+      Alert.alert("Close!", `${meaningText} ${confusableWord.note ?? ""}`.trim());
+      setCurrentGuess("");
       return;
     }
 
@@ -644,7 +676,7 @@ export default function GameScreen() {
                 {word.hintEmoji}
               </HintLine>
               <HintLine visible={showDefinitionTextHint} style={styles.definitionHintText}>
-                {word.definition}
+                {definitionText}
               </HintLine>
               {!completed && !showDefinitionTextHint && canTapDefinitionHint ? (
                 <Pressable onPress={() => setShowDefinitionHint(true)} style={styles.hintButton}>

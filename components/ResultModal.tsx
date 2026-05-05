@@ -79,7 +79,20 @@ export function ResultModal({
           <View style={styles.infoBlock}>
             <Text style={styles.infoText}>Category: {titleCase(word.category)}</Text>
             <Text style={styles.infoText}>JLPT: {word.jlpt}</Text>
-            <Text style={styles.infoText}>Definition: {word.definition}</Text>
+            <Text style={styles.infoText}>
+              Definition: {word.refinedDefinition ?? word.definition}
+            </Text>
+            {word.confusableWords?.length ? (
+              <View style={styles.confusableBlock}>
+                <Text style={styles.confusableTitle}>Often confused with</Text>
+                {word.confusableWords.map((confusable) => (
+                  <Text key={confusable.word} style={styles.confusableText}>
+                    {confusable.word} ({confusable.romaji}) - {confusable.english}
+                    {confusable.note ? ` · ${confusable.note}` : ""}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
             {reviewMode ? (
               <Text style={styles.infoText}>Mark whether you knew this word.</Text>
             ) : (
@@ -157,6 +170,25 @@ const styles = StyleSheet.create({
     color: "#4d4840",
     fontSize: 15,
     lineHeight: 22
+  },
+  confusableBlock: {
+    gap: 4,
+    borderTopWidth: 1,
+    borderTopColor: "#ded6ca",
+    paddingTop: 8,
+    marginTop: 4
+  },
+  confusableTitle: {
+    color: "#7b6f60",
+    fontSize: 13,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  confusableText: {
+    color: "#4d4840",
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 20
   },
   actions: {
     flexDirection: "row",

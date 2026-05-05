@@ -1367,9 +1367,19 @@ export const words: WordEntry[] = [
     romaji: "renshuu",
     english: "practice",
     category: "study",
-    definition: "repeated work to improve a skill",
+    definition: "practice; training repeatedly to improve a skill",
+    refinedDefinition: "practice; training repeatedly to improve a skill",
     jlpt: "N4",
-    hintEmoji: "🏋️"
+    hintEmoji: "🏋️",
+    closeAnswers: ["べんきょう"],
+    confusableWords: [
+      {
+        word: "べんきょう",
+        romaji: "benkyou",
+        english: "study",
+        note: "This word is more specifically practice."
+      }
+    ]
   },
   {
     id: "shiken-001",
