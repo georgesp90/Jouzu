@@ -2,7 +2,7 @@
 
 A simple Expo React Native MVP for a daily hiragana guessing game.
 
-Jouzu is meant to feel like a quiet daily Japanese ritual: open the app, guess one hiragana word, get Wordle-style feedback, learn the answer, and come back tomorrow.
+Jouzu is meant to feel like a quiet daily Japanese ritual: open the app, guess one hiragana word, get feedback, learn the answer, and come back tomorrow.
 
 ## Run Locally
 
@@ -45,12 +45,12 @@ npx expo install --fix
 
 ```txt
 app/index.tsx                 Main game screen
-components/GameGrid.tsx       Wordle-style puzzle grid
+components/GameGrid.tsx       Kana-style puzzle grid
 components/KanaKeyboard.tsx   Paged kana keyboard
 components/ResultModal.tsx    End-state learning and share modal
 data/words.ts                 Starter word list
 types/game.ts                 Shared game types
-utils/evaluateGuess.ts        Wordle feedback logic
+utils/evaluateGuess.ts        Feedback logic
 utils/getWordOfTheDay.ts      Daily puzzle selection
 utils/storage.ts              Local progress persistence
 ```
