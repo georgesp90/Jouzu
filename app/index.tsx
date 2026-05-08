@@ -5,22 +5,31 @@ import {
   Modal,
   PanResponder,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   useWindowDimensions
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { onAuthStateChanged } from "@firebase/auth";
 import { GameGrid } from "@/components/GameGrid";
 import { KanaKeyboard } from "@/components/KanaKeyboard";
 import { ResultModal } from "@/components/ResultModal";
 import { acceptedGuesses } from "@/data/acceptedGuesses";
 import { wordPools } from "@/data/words";
+import { auth } from "@/firebase/firebaseConfig";
 import {
-  ensureAnonymousUser,
+  UserStats,
+  getSignedInUserId,
+  getUserStats,
   hasPlayedToday,
   initUserIfNeeded,
-  saveDailyPlayForCurrentUser
+  saveDailyPlayForCurrentUser,
+  sendJouzuPasswordReset,
+  signInWithEmail,
+  signOutOfJouzu,
+  signUpWithEmail
 } from "@/firebase/services";
 import { DailyProgress, JLPTLevel, TileStatus, WordEntry, WordMastery } from "@/types/game";
 import { evaluateGuess } from "@/utils/evaluateGuess";
@@ -37,6 +46,65 @@ import {
 
 const KANA_ONLY = /^[\u3040-\u309f]+$/;
 type GameMode = "daily" | "unlimited";
+type AuthMode = "signIn" | "signUp";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function getEmailValidationMessage(email: string): string | null {
+  const trimmedEmail = email.trim().toLowerCase();
+
+  if (!trimmedEmail) {
+    return "Enter your email.";
+  }
+
+  if (trimmedEmail.endsWith(".con")) {
+    return "Did you mean .com? Check the email ending.";
+  }
+
+  if (!EMAIL_PATTERN.test(trimmedEmail)) {
+    return "Enter a valid email address.";
+  }
+
+  return null;
+}
+
+function getAuthErrorMessage(error: unknown): string {
+  const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
+
+  switch (code) {
+    case "auth/email-already-in-use":
+      return "That email already has an account. Try signing in.";
+    case "auth/invalid-email":
+      return "Enter a valid email address.";
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return "Email or password was not recognized.";
+    case "auth/weak-password":
+      return "Use at least 6 characters for your password.";
+    case "auth/network-request-failed":
+      return "Network error. Check your connection and try again.";
+    default:
+      return "Something went wrong. Please try again.";
+  }
+}
+
+function formatCompletedAt(date: Date | null): string {
+  if (!date) {
+    return "Not recorded";
+  }
+
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function formatStatValue(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
 
 function getMaxGuesses(answerLength: number): number {
   return answerLength === 2 ? 4 : 6;
@@ -183,6 +251,10 @@ export default function GameScreen() {
   const [showResult, setShowResult] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState("");
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [showRomaji, setShowRomaji] = useState(true);
   const [showDefinitionHint, setShowDefinitionHint] = useState(false);
   const [hintModeEnabled, setHintModeEnabled] = useState(false);
@@ -191,6 +263,12 @@ export default function GameScreen() {
   const [masteryFeedback, setMasteryFeedback] = useState("");
   const [shakeTrigger, setShakeTrigger] = useState(0);
   const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authMode, setAuthMode] = useState<AuthMode>("signIn");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authSubmitting, setAuthSubmitting] = useState(false);
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
   const maxTileSize = maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48;
@@ -206,6 +284,10 @@ export default function GameScreen() {
   );
   const isReviewFlashcardMode = gameMode === "unlimited" && reviewWeakOnly;
   const reviewWords = useMemo(() => getReviewWords(masteryByWord), [masteryByWord]);
+  const wordsById = useMemo(() => {
+    const entries = Object.values(wordPools).flat();
+    return new Map(entries.map((entry) => [entry.id, entry]));
+  }, []);
   const hasReviewWords = reviewWords.length > 0;
   const currentMastery = masteryByWord[word.id];
   const reviewResultLabel =
@@ -285,6 +367,28 @@ export default function GameScreen() {
   };
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUid(user?.uid ?? null);
+      setAuthLoading(false);
+
+      if (user) {
+        void initUserIfNeeded(user.uid, user.email);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!firebaseUid) {
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     async function restoreProgress() {
@@ -303,11 +407,11 @@ export default function GameScreen() {
         }
         setMasteryByWord(savedMastery);
 
-        const uid = await ensureAnonymousUser();
+        const uid = firebaseUid ?? (await getSignedInUserId());
 
         if (uid) {
           setFirebaseUid(uid);
-          await initUserIfNeeded(uid);
+          await initUserIfNeeded(uid, auth.currentUser?.email);
         }
 
         if (saved?.date === todayKey && saved.wordId === dailyPuzzle.word.id) {
@@ -332,7 +436,7 @@ export default function GameScreen() {
     return () => {
       mounted = false;
     };
-  }, [dailyPuzzle.word.id, todayKey]);
+  }, [authLoading, dailyPuzzle.word.id, firebaseUid, todayKey]);
 
   const startUnlimitedWord = (level = selectedJLPTLevel, preserveMasteryFeedback = false) => {
     resetBoard(preserveMasteryFeedback);
@@ -459,6 +563,96 @@ export default function GameScreen() {
     void saveShowRomajiPreference(nextShowRomaji);
   };
 
+  const loadStats = useCallback(async () => {
+    if (!firebaseUid) {
+      return;
+    }
+
+    setStatsLoading(true);
+    setStatsError("");
+
+    try {
+      const nextStats = await getUserStats(firebaseUid, todayKey);
+      setUserStats(nextStats);
+    } catch {
+      setStatsError("Could not load your Jouzu history right now.");
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [firebaseUid, todayKey]);
+
+  const openStats = () => {
+    setShowStats(true);
+    void loadStats();
+  };
+
+  const handleAuthSubmit = async () => {
+    const trimmedEmail = authEmail.trim();
+    const emailValidationMessage = getEmailValidationMessage(trimmedEmail);
+
+    if (emailValidationMessage) {
+      setAuthError(emailValidationMessage);
+      return;
+    }
+
+    if (!authPassword) {
+      setAuthError("Enter your password.");
+      return;
+    }
+
+    setAuthSubmitting(true);
+    setAuthError("");
+
+    try {
+      const uid =
+        authMode === "signIn"
+          ? await signInWithEmail(trimmedEmail, authPassword)
+          : await signUpWithEmail(trimmedEmail, authPassword);
+
+      if (uid) {
+        setFirebaseUid(uid);
+      }
+      setAuthPassword("");
+    } catch (error) {
+      setAuthError(getAuthErrorMessage(error));
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    const trimmedEmail = authEmail.trim();
+    const emailValidationMessage = getEmailValidationMessage(trimmedEmail);
+
+    if (emailValidationMessage) {
+      setAuthError(emailValidationMessage);
+      return;
+    }
+
+    setAuthSubmitting(true);
+    setAuthError("");
+
+    try {
+      await sendJouzuPasswordReset(trimmedEmail);
+      Alert.alert("Check your email", "Password reset instructions are on the way.");
+    } catch (error) {
+      setAuthError(getAuthErrorMessage(error));
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    void signOutOfJouzu();
+    setShowSettings(false);
+    setGuesses([]);
+    setResults([]);
+    setCurrentGuess("");
+    setCompleted(false);
+    setSolved(false);
+    setShowResult(false);
+  };
+
   const handleKanaPress = (kana: string) => {
     if (completed || Array.from(currentGuess).length >= answerChars.length) {
       return;
@@ -538,6 +732,10 @@ export default function GameScreen() {
           won: nextSolved,
           guessesUsed: nextGuesses.length,
           hintUsed: showDefinitionHint || incorrectGuessCount >= 2
+        }).then(() => {
+          if (showStats) {
+            void loadStats();
+          }
         });
       }
     } else {
@@ -556,6 +754,95 @@ export default function GameScreen() {
       setShowResult(true);
     }
   };
+
+  const todayStatsWord = userStats?.todayPlay
+    ? wordsById.get(userStats.todayPlay.wordId)
+    : null;
+
+  if (authLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.authContainer}>
+          <Text style={styles.authTitle}>Jozu</Text>
+          <Text style={styles.authSubtitle}>Loading your account...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!firebaseUid) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.authContainer}>
+          <View style={styles.authCard}>
+            <Text style={styles.authTitle}>Jozu</Text>
+            <Text style={styles.authSubtitle}>Sign in to save your progress.</Text>
+            <View style={styles.authToggle} accessibilityLabel="Authentication mode">
+              <Pressable
+                onPress={() => {
+                  setAuthMode("signIn");
+                  setAuthError("");
+                }}
+                style={[styles.authToggleSegment, authMode === "signIn" && styles.activeSegment]}
+              >
+                <Text style={[styles.authToggleText, authMode === "signIn" && styles.activeSegmentText]}>
+                  Sign In
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setAuthMode("signUp");
+                  setAuthError("");
+                }}
+                style={[styles.authToggleSegment, authMode === "signUp" && styles.activeSegment]}
+              >
+                <Text style={[styles.authToggleText, authMode === "signUp" && styles.activeSegmentText]}>
+                  Create
+                </Text>
+              </Pressable>
+            </View>
+            <TextInput
+              value={authEmail}
+              onChangeText={setAuthEmail}
+              placeholder="Email"
+              placeholderTextColor="#9b9082"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              style={styles.authInput}
+            />
+            <TextInput
+              value={authPassword}
+              onChangeText={setAuthPassword}
+              placeholder="Password"
+              placeholderTextColor="#9b9082"
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+              textContentType={authMode === "signIn" ? "password" : "newPassword"}
+              style={styles.authInput}
+            />
+            {authError ? <Text style={styles.authError}>{authError}</Text> : null}
+            <Pressable
+              onPress={handleAuthSubmit}
+              disabled={authSubmitting}
+              style={[styles.authSubmitButton, authSubmitting && styles.disabledAuthButton]}
+            >
+              <Text style={styles.authSubmitText}>
+                {authSubmitting ? "Working..." : authMode === "signIn" ? "Sign In" : "Create Account"}
+              </Text>
+            </Pressable>
+            {authMode === "signIn" ? (
+              <Pressable onPress={handlePasswordReset} disabled={authSubmitting}>
+                <Text style={styles.authLinkText}>Forgot password?</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -582,6 +869,14 @@ export default function GameScreen() {
             </Pressable>
           </View>
           <View style={styles.iconCluster}>
+            <Pressable
+              onPress={openStats}
+              style={styles.statsButton}
+              accessibilityRole="button"
+              accessibilityLabel="Open daily stats"
+            >
+              <Text style={styles.statsIcon}>📊</Text>
+            </Pressable>
             <Pressable
               onPress={() => setShowHelp(true)}
               style={styles.helpButton}
@@ -749,6 +1044,116 @@ export default function GameScreen() {
       />
 
       <Modal
+        visible={showStats}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowStats(false)}
+      >
+        <Pressable style={styles.statsBackdrop} onPress={() => setShowStats(false)}>
+          <Pressable style={styles.statsMenu} onPress={(event) => event.stopPropagation()}>
+            <View style={styles.statsHeader}>
+              <View>
+                <Text style={styles.statsTitle}>Daily Results</Text>
+                <Text style={styles.statsSubtitle}>Your Jouzu history</Text>
+              </View>
+              <Pressable
+                onPress={loadStats}
+                style={styles.statsRefreshButton}
+                accessibilityRole="button"
+                accessibilityLabel="Refresh stats"
+              >
+                <Text style={styles.statsRefreshText}>↻</Text>
+              </Pressable>
+            </View>
+
+            {statsLoading ? (
+              <Text style={styles.statsMessage}>Loading your progress...</Text>
+            ) : statsError ? (
+              <Text style={styles.statsMessage}>{statsError}</Text>
+            ) : userStats ? (
+              <>
+                <View style={styles.statsSection}>
+                  <Text style={styles.statsSectionTitle}>Today</Text>
+                  {userStats.todayPlay ? (
+                    <View style={styles.todayResultBox}>
+                      <View style={styles.todayResultHeader}>
+                        <Text style={styles.todayResultStatus}>
+                          {userStats.todayPlay.won ? "Completed · Won" : "Completed · Lost"}
+                        </Text>
+                        <Text style={styles.todayResultDate}>
+                          {formatCompletedAt(userStats.todayPlay.completedAt)}
+                        </Text>
+                      </View>
+                      <View style={styles.statsLine}>
+                        <Text style={styles.statsLineLabel}>Guesses</Text>
+                        <Text style={styles.statsLineValue}>{userStats.todayPlay.guessesUsed}</Text>
+                      </View>
+                      <View style={styles.statsLine}>
+                        <Text style={styles.statsLineLabel}>Hint used</Text>
+                        <Text style={styles.statsLineValue}>
+                          {userStats.todayPlay.hintUsed ? "Yes" : "No"}
+                        </Text>
+                      </View>
+                      <View style={styles.statsLine}>
+                        <Text style={styles.statsLineLabel}>Word</Text>
+                        <Text style={styles.statsLineValue}>
+                          {todayStatsWord
+                            ? `${todayStatsWord.hiragana} · ${todayStatsWord.english}`
+                            : userStats.todayPlay.wordId}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={styles.statsEmptyText}>
+                      Play today's word to start building your Jouzu history.
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.statsSection}>
+                  <Text style={styles.statsSectionTitle}>Progress</Text>
+                  <View style={styles.statsGrid}>
+                    <View style={styles.statCell}>
+                      <Text style={styles.statValue}>{userStats.currentStreak}</Text>
+                      <Text style={styles.statLabel}>Current</Text>
+                    </View>
+                    <View style={styles.statCell}>
+                      <Text style={styles.statValue}>{userStats.bestStreak}</Text>
+                      <Text style={styles.statLabel}>Best</Text>
+                    </View>
+                    <View style={styles.statCell}>
+                      <Text style={styles.statValue}>{userStats.totalDailyPlays}</Text>
+                      <Text style={styles.statLabel}>Plays</Text>
+                    </View>
+                    <View style={styles.statCell}>
+                      <Text style={styles.statValue}>{userStats.totalWins}</Text>
+                      <Text style={styles.statLabel}>Wins</Text>
+                    </View>
+                    <View style={styles.statCell}>
+                      <Text style={styles.statValue}>{userStats.winRate}%</Text>
+                      <Text style={styles.statLabel}>Win rate</Text>
+                    </View>
+                    <View style={styles.statCell}>
+                      <Text style={styles.statValue}>
+                        {formatStatValue(userStats.averageGuesses)}
+                      </Text>
+                      <Text style={styles.statLabel}>Avg guesses</Text>
+                    </View>
+                  </View>
+                </View>
+              </>
+            ) : (
+              <Text style={styles.statsMessage}>Open your Daily results after signing in.</Text>
+            )}
+
+            <Pressable onPress={() => setShowStats(false)} style={styles.statsCloseButton}>
+              <Text style={styles.statsCloseText}>Done</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
         visible={showSettings}
         transparent
         animationType="fade"
@@ -824,6 +1229,11 @@ export default function GameScreen() {
                 </View>
               </>
             ) : null}
+            <Text style={styles.settingsLabel}>Account</Text>
+            <Text style={styles.accountText}>{auth.currentUser?.email ?? "Signed in"}</Text>
+            <Pressable onPress={handleSignOut} style={styles.signOutButton}>
+              <Text style={styles.signOutButtonText}>Sign Out</Text>
+            </Pressable>
             <Pressable onPress={() => setShowSettings(false)} style={styles.settingsCloseButton}>
               <Text style={styles.settingsCloseText}>Done</Text>
             </Pressable>
@@ -861,6 +1271,92 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 2
   },
+  authContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24
+  },
+  authCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#fffdf8",
+    padding: 18,
+    gap: 12
+  },
+  authTitle: {
+    color: "#25231f",
+    fontSize: 38,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  authSubtitle: {
+    color: "#817565",
+    fontSize: 15,
+    fontWeight: "800",
+    textAlign: "center"
+  },
+  authToggle: {
+    flexDirection: "row",
+    borderWidth: 2,
+    borderColor: "#ded6ca",
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#fffdf8"
+  },
+  authToggleSegment: {
+    flex: 1,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  authToggleText: {
+    color: "#7b6f60",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  authInput: {
+    height: 46,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#f7f2ea",
+    color: "#25231f",
+    fontSize: 16,
+    fontWeight: "700",
+    paddingHorizontal: 12
+  },
+  authError: {
+    color: "#9b3d35",
+    fontSize: 13,
+    fontWeight: "800",
+    lineHeight: 18,
+    textAlign: "center"
+  },
+  authSubmitButton: {
+    height: 44,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2f4f4a"
+  },
+  disabledAuthButton: {
+    opacity: 0.65
+  },
+  authSubmitText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "900"
+  },
+  authLinkText: {
+    color: "#2f4f4a",
+    fontSize: 13,
+    fontWeight: "900",
+    textAlign: "center"
+  },
   topBar: {
     width: "100%",
     minHeight: 38,
@@ -890,7 +1386,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#e9e0d2"
   },
+  statsButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e9e0d2"
+  },
   settingsIcon: {
+    color: "#2b2a27",
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 24
+  },
+  statsIcon: {
     color: "#2b2a27",
     fontSize: 22,
     fontWeight: "900",
@@ -1165,6 +1675,154 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "900"
   },
+  statsBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(28, 27, 24, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18
+  },
+  statsMenu: {
+    width: "100%",
+    maxWidth: 380,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#fffdf8",
+    padding: 16,
+    gap: 14
+  },
+  statsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10
+  },
+  statsTitle: {
+    color: "#25231f",
+    fontSize: 22,
+    fontWeight: "900"
+  },
+  statsSubtitle: {
+    color: "#817565",
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  statsRefreshButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e9e0d2"
+  },
+  statsRefreshText: {
+    color: "#2f4f4a",
+    fontSize: 18,
+    fontWeight: "900"
+  },
+  statsSection: {
+    gap: 8
+  },
+  statsSectionTitle: {
+    color: "#817565",
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  todayResultBox: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#f7f2ea",
+    padding: 12,
+    gap: 7
+  },
+  todayResultHeader: {
+    gap: 2
+  },
+  todayResultStatus: {
+    color: "#25231f",
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  todayResultDate: {
+    color: "#817565",
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  statsLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12
+  },
+  statsLineLabel: {
+    color: "#817565",
+    fontSize: 13,
+    fontWeight: "800"
+  },
+  statsLineValue: {
+    flex: 1,
+    color: "#2b2a27",
+    fontSize: 13,
+    fontWeight: "900",
+    textAlign: "right"
+  },
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8
+  },
+  statCell: {
+    width: "31%",
+    minWidth: 94,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#f7f2ea",
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    gap: 2
+  },
+  statValue: {
+    color: "#2f4f4a",
+    fontSize: 21,
+    fontWeight: "900"
+  },
+  statLabel: {
+    color: "#817565",
+    fontSize: 11,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  statsMessage: {
+    color: "#5d5448",
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 20,
+    textAlign: "center",
+    paddingVertical: 18
+  },
+  statsEmptyText: {
+    color: "#5d5448",
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 20
+  },
+  statsCloseButton: {
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2f4f4a"
+  },
+  statsCloseText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900"
+  },
   settingsBackdrop: {
     flex: 1,
     backgroundColor: "rgba(28, 27, 24, 0.25)",
@@ -1203,6 +1861,25 @@ const styles = StyleSheet.create({
   settingsCloseText: {
     color: "#ffffff",
     fontSize: 14,
+    fontWeight: "900"
+  },
+  accountText: {
+    color: "#5d5448",
+    fontSize: 13,
+    fontWeight: "800"
+  },
+  signOutButton: {
+    height: 34,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#cbbfad",
+    backgroundColor: "#fffdf8"
+  },
+  signOutButtonText: {
+    color: "#2f4f4a",
+    fontSize: 13,
     fontWeight: "900"
   },
   helpBackdrop: {
