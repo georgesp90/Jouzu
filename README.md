@@ -1,6 +1,6 @@
 # Jouzu
 
-A simple Expo React Native MVP for a daily hiragana Wordle-style game.
+A simple Expo React Native MVP for a daily hiragana guessing game.
 
 Jouzu is meant to feel like a quiet daily Japanese ritual: open the app, guess one hiragana word, get Wordle-style feedback, learn the answer, and come back tomorrow.
 
