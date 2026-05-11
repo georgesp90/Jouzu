@@ -2,16 +2,41 @@ import { WordEntry } from "@/types/game";
 
 const START_DATE = "2026-01-01";
 const MS_PER_DAY = 86400000;
+const DAILY_TIME_ZONE = "America/New_York";
+
+function getDatePartsInDailyTimeZone(date: Date): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: DAILY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day)
+  };
+}
+
+function getDayIndex(dateKey: string): number {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const [startYear, startMonth, startDay] = START_DATE.split("-").map(Number);
+  const startUtc = Date.UTC(startYear, startMonth - 1, startDay);
+  const dateUtc = Date.UTC(year, month - 1, day);
+
+  return Math.floor((dateUtc - startUtc) / MS_PER_DAY);
+}
 
 export function getTodayKey(date = new Date()): string {
-  return date.toISOString().slice(0, 10);
+  const { year, month, day } = getDatePartsInDailyTimeZone(date);
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 export function getPuzzleNumber(date = new Date()): number {
-  const start = new Date(`${START_DATE}T00:00:00`);
-  const startUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
-  const todayUtc = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-  return Math.floor((todayUtc - startUtc) / MS_PER_DAY) + 1;
+  return getDayIndex(getTodayKey(date)) + 1;
 }
 
 export function getWordOfTheDay(words: WordEntry[], date = new Date()): WordEntry {
@@ -19,10 +44,7 @@ export function getWordOfTheDay(words: WordEntry[], date = new Date()): WordEntr
     throw new Error("Cannot choose a daily word from an empty word list.");
   }
 
-  const start = new Date(`${START_DATE}T00:00:00`);
-  const startUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
-  const todayUtc = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.floor((todayUtc - startUtc) / MS_PER_DAY);
+  const diffDays = getDayIndex(getTodayKey(date));
 
   return words[Math.abs(diffDays) % words.length];
 }

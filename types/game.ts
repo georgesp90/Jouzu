@@ -19,7 +19,7 @@ export type WordEntry = {
   }[];
 };
 
-export type TileStatus = "correct" | "present" | "absent" | "empty";
+export type TileStatus = "correct" | "present" | "absent" | "close" | "empty";
 
 export type DailyProgress = {
   date: string;

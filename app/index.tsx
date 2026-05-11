@@ -21,6 +21,7 @@ import { wordPools } from "@/data/words";
 import { auth } from "@/firebase/firebaseConfig";
 import {
   UserStats,
+  getOrCreateDailyPuzzle,
   getSignedInUserId,
   getUserStats,
   hasPlayedToday,
@@ -166,6 +167,13 @@ function getConfusableWord(word: WordEntry, guess: string) {
   return null;
 }
 
+function getCloseAnswerMessage(word: WordEntry, guess: string): string {
+  const confusableWord = getConfusableWord(word, guess);
+  const note = confusableWord?.note ? `\n\n${confusableWord.note}` : "";
+
+  return `${guess} is related, but Jozu is looking for a different word.\n\nThis still counts as an attempt.${note}`;
+}
+
 function selectWeightedWord(
   candidates: WordEntry[],
   masteryByWord: Record<string, WordMastery>
@@ -228,7 +236,8 @@ export default function GameScreen() {
   const { height, width } = useWindowDimensions();
   const todayKey = useMemo(() => getTodayKey(), []);
   const puzzleNumber = useMemo(() => getPuzzleNumber(), []);
-  const dailyPuzzle = useMemo(() => getDailyPuzzle(), []);
+  const localDailyPuzzle = useMemo(() => getDailyPuzzle(), []);
+  const [dailyPuzzle, setDailyPuzzle] = useState(localDailyPuzzle);
   const [gameMode, setGameMode] = useState<GameMode>("daily");
   const [selectedJLPTLevel, setSelectedJLPTLevel] = useState<JLPTLevel>("N5");
   const [unlimitedWord, setUnlimitedWord] = useState(() => selectRandomWord("N5"));
@@ -408,13 +417,18 @@ export default function GameScreen() {
         setMasteryByWord(savedMastery);
 
         const uid = firebaseUid ?? (await getSignedInUserId());
+        const syncedDailyPuzzle = uid
+          ? await getOrCreateDailyPuzzle(localDailyPuzzle)
+          : localDailyPuzzle;
 
         if (uid) {
           setFirebaseUid(uid);
           await initUserIfNeeded(uid, auth.currentUser?.email);
         }
 
-        if (saved?.date === todayKey && saved.wordId === dailyPuzzle.word.id) {
+        setDailyPuzzle(syncedDailyPuzzle);
+
+        if (saved?.date === todayKey && saved.wordId === syncedDailyPuzzle.word.id) {
           setGuesses(saved.guesses);
           setResults(saved.results);
           setSolved(saved.solved);
@@ -436,7 +450,7 @@ export default function GameScreen() {
     return () => {
       mounted = false;
     };
-  }, [authLoading, dailyPuzzle.word.id, firebaseUid, todayKey]);
+  }, [authLoading, firebaseUid, localDailyPuzzle, todayKey]);
 
   const startUnlimitedWord = (level = selectedJLPTLevel, preserveMasteryFeedback = false) => {
     resetBoard(preserveMasteryFeedback);
@@ -538,6 +552,7 @@ export default function GameScreen() {
   const keyStatuses = useMemo(() => {
     const priority: Record<TileStatus, number> = {
       empty: 0,
+      close: 0,
       absent: 1,
       present: 2,
       correct: 3
@@ -549,7 +564,11 @@ export default function GameScreen() {
         const nextStatus = results[rowIndex]?.[columnIndex];
         const currentStatus = statuses[kana] ?? "empty";
 
-        if (nextStatus && priority[nextStatus] > priority[currentStatus]) {
+        if (
+          nextStatus &&
+          nextStatus !== "close" &&
+          priority[nextStatus] > priority[currentStatus]
+        ) {
           statuses[kana] = nextStatus;
         }
       });
@@ -682,32 +701,24 @@ export default function GameScreen() {
       return;
     }
 
-    const confusableWord = getConfusableWord(word, currentGuess);
-
-    if (confusableWord) {
-      const meaningText = confusableWord.english
-        ? `${confusableWord.word} means ${confusableWord.english}.`
-        : `${confusableWord.word} is close.`;
-
-      Alert.alert("Close!", `${meaningText} ${confusableWord.note ?? ""}`.trim());
-      setCurrentGuess("");
-      return;
-    }
+    const isCloseAnswer = Boolean(getConfusableWord(word, currentGuess));
 
     if (currentChars.length !== answerChars.length) {
       Alert.alert("Keep going", `Today's word is ${answerChars.length} kana.`);
       return;
     }
 
-    if (!acceptedGuesses.has(currentGuess)) {
+    if (!isCloseAnswer && !acceptedGuesses.has(currentGuess)) {
       setShakeTrigger((value) => value + 1);
       return;
     }
 
-    const evaluated = evaluateGuess(currentGuess, word.hiragana);
+    const evaluated: TileStatus[] = isCloseAnswer
+      ? Array.from({ length: currentChars.length }, () => "close")
+      : evaluateGuess(currentGuess, word.hiragana);
     const nextGuesses = [...guesses, currentGuess];
     const nextResults = [...results, evaluated];
-    const nextSolved = currentGuess === word.hiragana;
+    const nextSolved = !isCloseAnswer && currentGuess === word.hiragana;
     const nextCompleted = nextSolved || nextGuesses.length === maxGuesses;
 
     setGuesses(nextGuesses);
@@ -750,7 +761,18 @@ export default function GameScreen() {
       }
     }
 
-    if (nextCompleted) {
+    if (isCloseAnswer) {
+      Alert.alert("Close answer", getCloseAnswerMessage(word, currentGuess), [
+        {
+          text: "OK",
+          onPress: () => {
+            if (nextCompleted) {
+              setShowResult(true);
+            }
+          }
+        }
+      ]);
+    } else if (nextCompleted) {
       setShowResult(true);
     }
   };
@@ -869,14 +891,16 @@ export default function GameScreen() {
             </Pressable>
           </View>
           <View style={styles.iconCluster}>
-            <Pressable
-              onPress={openStats}
-              style={styles.statsButton}
-              accessibilityRole="button"
-              accessibilityLabel="Open daily stats"
-            >
-              <Text style={styles.statsIcon}>📊</Text>
-            </Pressable>
+            {gameMode === "daily" ? (
+              <Pressable
+                onPress={openStats}
+                style={styles.statsButton}
+                accessibilityRole="button"
+                accessibilityLabel="Open daily stats"
+              >
+                <Text style={styles.statsIcon}>📊</Text>
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={() => setShowHelp(true)}
               style={styles.helpButton}

@@ -18,6 +18,7 @@ const statusStyles: Record<TileStatus, { backgroundColor: string; borderColor: s
   correct: { backgroundColor: "#4f8f62", borderColor: "#4f8f62", color: "#ffffff" },
   present: { backgroundColor: "#d7aa42", borderColor: "#d7aa42", color: "#ffffff" },
   absent: { backgroundColor: "#6f7472", borderColor: "#6f7472", color: "#ffffff" },
+  close: { backgroundColor: "#6f5a8e", borderColor: "#6f5a8e", color: "#ffffff" },
   empty: { backgroundColor: "#fffdf8", borderColor: "#d8d1c6", color: "#2b2a27" }
 };
 

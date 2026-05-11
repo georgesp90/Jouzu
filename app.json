@@ -4,21 +4,24 @@
     "slug": "jozu-hiragana-wordle",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "jozu",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.georgesp9.jozuhiraganawordle",
+      "bundleIdentifier": "com.georgesp9.jozuapp",
+      "icon": "./assets/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#f7f2ea"
       },
-      "package": "com.georgesp9.jozuhiraganawordle"
+      "package": "com.georgesp9.jozuapp"
     },
     "web": {
       "bundler": "metro"

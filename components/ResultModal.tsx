@@ -19,6 +19,7 @@ const resultEmoji: Record<TileStatus, string> = {
   correct: "🟩",
   present: "🟨",
   absent: "⬜",
+  close: "🟪",
   empty: "⬜"
 };
 

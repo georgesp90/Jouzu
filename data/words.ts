@@ -1181,7 +1181,22 @@ export const words: WordEntry[] = [
     category: "adjective",
     definition: "having great value",
     jlpt: "N3",
-    hintEmoji: "⭐"
+    hintEmoji: "⭐",
+    closeAnswers: ["だいじ", "ひつよう"],
+    confusableWords: [
+      {
+        word: "だいじ",
+        romaji: "daiji",
+        english: "important",
+        note: "Very close in meaning; たいせつ often feels more precious or valuable."
+      },
+      {
+        word: "ひつよう",
+        romaji: "hitsuyou",
+        english: "necessary",
+        note: "Necessary means needed; たいせつ means important or valuable."
+      }
+    ]
   },
   {
     id: "hitsuyou-001",
@@ -1191,7 +1206,22 @@ export const words: WordEntry[] = [
     category: "adjective",
     definition: "needed or required",
     jlpt: "N3",
-    hintEmoji: "🔑"
+    hintEmoji: "🔑",
+    closeAnswers: ["たいせつ", "だいじ"],
+    confusableWords: [
+      {
+        word: "たいせつ",
+        romaji: "taisetsu",
+        english: "important",
+        note: "Important means valuable; ひつよう means needed or required."
+      },
+      {
+        word: "だいじ",
+        romaji: "daiji",
+        english: "important",
+        note: "だいじ is important; ひつよう is necessary."
+      }
+    ]
   },
   {
     id: "kanousei-001",
@@ -1739,7 +1769,16 @@ export const words: WordEntry[] = [
     category: "feeling",
     definition: "feeling unhappy",
     jlpt: "N4",
-    hintEmoji: "😢"
+    hintEmoji: "😢",
+    closeAnswers: ["さびしい"],
+    confusableWords: [
+      {
+        word: "さびしい",
+        romaji: "sabishii",
+        english: "lonely",
+        note: "Lonely is sadness from being alone; かなしい is broader sadness."
+      }
+    ]
   },
   {
     id: "ureshii-001",
@@ -1779,7 +1818,16 @@ export const words: WordEntry[] = [
     category: "feeling",
     definition: "causing fear",
     jlpt: "N4",
-    hintEmoji: "😨"
+    hintEmoji: "😨",
+    closeAnswers: ["あぶない"],
+    confusableWords: [
+      {
+        word: "あぶない",
+        romaji: "abunai",
+        english: "dangerous",
+        note: "Dangerous describes risk; こわい describes the scary feeling."
+      }
+    ]
   },
   {
     id: "kibun-001",
@@ -2968,6 +3016,1717 @@ export const words: WordEntry[] = [
     definition: "something someone does",
     jlpt: "N3",
     hintEmoji: "🏃"
+  },
+  {
+    id: "aimasu-001",
+    hiragana: "あいます",
+    romaji: "aimasu",
+    english: "meet",
+    category: "action",
+    definition: "to meet or see someone",
+    refinedDefinition: "meet; to see someone by arrangement or chance",
+    jlpt: "N5",
+    hintEmoji: "🤝"
+  },
+  {
+    id: "akai-001",
+    hiragana: "あかい",
+    romaji: "akai",
+    english: "red",
+    category: "color",
+    definition: "the color red",
+    jlpt: "N5",
+    hintEmoji: "🔴"
+  },
+  {
+    id: "akarui-001",
+    hiragana: "あかるい",
+    romaji: "akarui",
+    english: "bright",
+    category: "description",
+    definition: "full of light",
+    refinedDefinition: "bright; full of light or cheerful",
+    jlpt: "N5",
+    hintEmoji: "💡"
+  },
+  {
+    id: "asatte-001",
+    hiragana: "あさって",
+    romaji: "asatte",
+    english: "day after tomorrow",
+    category: "time",
+    definition: "two days from today",
+    jlpt: "N5",
+    hintEmoji: "📅"
+  },
+  {
+    id: "atarashii-001",
+    hiragana: "あたらしい",
+    romaji: "atarashii",
+    english: "new",
+    category: "description",
+    definition: "not old or used before",
+    jlpt: "N5",
+    hintEmoji: "✨"
+  },
+  {
+    id: "abimasu-001",
+    hiragana: "あびます",
+    romaji: "abimasu",
+    english: "bathe",
+    category: "action",
+    definition: "to take a shower or bath",
+    jlpt: "N5",
+    hintEmoji: "🚿"
+  },
+  {
+    id: "akemasu-001",
+    hiragana: "あけます",
+    romaji: "akemasu",
+    english: "open",
+    category: "action",
+    definition: "to open something",
+    jlpt: "N5",
+    hintEmoji: "🚪"
+  },
+  {
+    id: "agemasu-001",
+    hiragana: "あげます",
+    romaji: "agemasu",
+    english: "give",
+    category: "action",
+    definition: "to give something to someone",
+    jlpt: "N5",
+    hintEmoji: "🎁"
+  },
+  {
+    id: "araimasu-001",
+    hiragana: "あらいます",
+    romaji: "araimasu",
+    english: "wash",
+    category: "action",
+    definition: "to clean with water",
+    jlpt: "N5",
+    hintEmoji: "🧼"
+  },
+  {
+    id: "arimasu-001",
+    hiragana: "あります",
+    romaji: "arimasu",
+    english: "exist",
+    category: "concept",
+    definition: "to exist for things",
+    refinedDefinition: "exist; used for things and places",
+    jlpt: "N5",
+    hintEmoji: "📍"
+  },
+  {
+    id: "arukimasu-001",
+    hiragana: "あるきます",
+    romaji: "arukimasu",
+    english: "walk",
+    category: "action",
+    definition: "to move on foot",
+    jlpt: "N5",
+    hintEmoji: "🚶"
+  },
+  {
+    id: "isogashii-001",
+    hiragana: "いそがしい",
+    romaji: "isogashii",
+    english: "busy",
+    category: "description",
+    definition: "having many things to do",
+    jlpt: "N5",
+    hintEmoji: "🗓️"
+  },
+  {
+    id: "itai-001",
+    hiragana: "いたい",
+    romaji: "itai",
+    english: "painful",
+    category: "health",
+    definition: "hurting or causing pain",
+    jlpt: "N5",
+    hintEmoji: "🤕"
+  },
+  {
+    id: "issho-001",
+    hiragana: "いっしょ",
+    romaji: "issho",
+    english: "together",
+    category: "concept",
+    definition: "with someone or something",
+    jlpt: "N5",
+    hintEmoji: "👥"
+  },
+  {
+    id: "iriguchi-001",
+    hiragana: "いりぐち",
+    romaji: "iriguchi",
+    english: "entrance",
+    category: "place",
+    definition: "the way into a place",
+    jlpt: "N5",
+    hintEmoji: "🚪"
+  },
+  {
+    id: "uta-001",
+    hiragana: "うた",
+    romaji: "uta",
+    english: "song",
+    category: "object",
+    definition: "music with words",
+    jlpt: "N5",
+    hintEmoji: "🎵"
+  },
+  {
+    id: "umaremasu-001",
+    hiragana: "うまれます",
+    romaji: "umaremasu",
+    english: "be born",
+    category: "life",
+    definition: "to come into life",
+    jlpt: "N5",
+    hintEmoji: "👶"
+  },
+  {
+    id: "urusai-001",
+    hiragana: "うるさい",
+    romaji: "urusai",
+    english: "noisy",
+    category: "description",
+    definition: "too loud",
+    jlpt: "N5",
+    hintEmoji: "🔊"
+  },
+  {
+    id: "e-001",
+    hiragana: "え",
+    romaji: "e",
+    english: "picture",
+    category: "object",
+    definition: "a drawing or image",
+    jlpt: "N5",
+    hintEmoji: "🖼️"
+  },
+  {
+    id: "eigo-001",
+    hiragana: "えいご",
+    romaji: "eigo",
+    english: "English",
+    category: "language",
+    definition: "the English language",
+    jlpt: "N5",
+    hintEmoji: "🔤"
+  },
+  {
+    id: "ookii-001",
+    hiragana: "おおきい",
+    romaji: "ookii",
+    english: "big",
+    category: "description",
+    definition: "large in size",
+    jlpt: "N5",
+    hintEmoji: "🐘"
+  },
+  {
+    id: "okimasu-001",
+    hiragana: "おきます",
+    romaji: "okimasu",
+    english: "wake up",
+    category: "action",
+    definition: "to stop sleeping",
+    refinedDefinition: "wake up; get out of sleep",
+    jlpt: "N5",
+    hintEmoji: "⏰"
+  },
+  {
+    id: "ojii-san-001",
+    hiragana: "おじいさん",
+    romaji: "ojiisan",
+    english: "grandfather",
+    category: "person",
+    definition: "a grandfather or elderly man",
+    jlpt: "N5",
+    hintEmoji: "👴"
+  },
+  {
+    id: "oshimasu-001",
+    hiragana: "おします",
+    romaji: "oshimasu",
+    english: "push",
+    category: "action",
+    definition: "to press or push something",
+    jlpt: "N5",
+    hintEmoji: "👆"
+  },
+  {
+    id: "oshii-001",
+    hiragana: "おしい",
+    romaji: "oshii",
+    english: "almost",
+    category: "concept",
+    definition: "close but not quite right",
+    jlpt: "N5",
+    hintEmoji: "🤏"
+  },
+  {
+    id: "osoi-001",
+    hiragana: "おそい",
+    romaji: "osoi",
+    english: "late",
+    category: "time",
+    definition: "not early or not fast",
+    refinedDefinition: "late or slow depending on context",
+    jlpt: "N5",
+    hintEmoji: "🐢"
+  },
+  {
+    id: "otousan-001",
+    hiragana: "おとうさん",
+    romaji: "otousan",
+    english: "father",
+    category: "person",
+    definition: "someone's father",
+    jlpt: "N5",
+    hintEmoji: "👨"
+  },
+  {
+    id: "otooto-001",
+    hiragana: "おとうと",
+    romaji: "otooto",
+    english: "younger brother",
+    category: "person",
+    definition: "a younger brother",
+    jlpt: "N5",
+    hintEmoji: "👦"
+  },
+  {
+    id: "onaji-001",
+    hiragana: "おなじ",
+    romaji: "onaji",
+    english: "same",
+    category: "concept",
+    definition: "not different",
+    jlpt: "N5",
+    hintEmoji: "🟰"
+  },
+  {
+    id: "oniisan-001",
+    hiragana: "おにいさん",
+    romaji: "oniisan",
+    english: "older brother",
+    category: "person",
+    definition: "someone's older brother",
+    jlpt: "N5",
+    hintEmoji: "👨"
+  },
+  {
+    id: "oneesan-001",
+    hiragana: "おねえさん",
+    romaji: "oneesan",
+    english: "older sister",
+    category: "person",
+    definition: "someone's older sister",
+    jlpt: "N5",
+    hintEmoji: "👩"
+  },
+  {
+    id: "obaasan-001",
+    hiragana: "おばあさん",
+    romaji: "obaasan",
+    english: "grandmother",
+    category: "person",
+    definition: "a grandmother or elderly woman",
+    jlpt: "N5",
+    hintEmoji: "👵"
+  },
+  {
+    id: "oboemasu-001",
+    hiragana: "おぼえます",
+    romaji: "oboemasu",
+    english: "memorize",
+    category: "study",
+    definition: "to learn and remember",
+    refinedDefinition: "memorize; learn something so you remember it",
+    jlpt: "N5",
+    hintEmoji: "🧠"
+  },
+  {
+    id: "omoimasu-001",
+    hiragana: "おもいます",
+    romaji: "omoimasu",
+    english: "think",
+    category: "concept",
+    definition: "to think or believe",
+    jlpt: "N5",
+    hintEmoji: "💭"
+  },
+  {
+    id: "omoshiroi-001",
+    hiragana: "おもしろい",
+    romaji: "omoshiroi",
+    english: "interesting",
+    category: "description",
+    definition: "fun or interesting",
+    jlpt: "N5",
+    hintEmoji: "😄"
+  },
+  {
+    id: "oyogimasu-001",
+    hiragana: "およぎます",
+    romaji: "oyogimasu",
+    english: "swim",
+    category: "action",
+    definition: "to move through water",
+    jlpt: "N5",
+    hintEmoji: "🏊"
+  },
+  {
+    id: "orimasu-001",
+    hiragana: "おります",
+    romaji: "orimasu",
+    english: "get off",
+    category: "transport",
+    definition: "to get off a vehicle",
+    refinedDefinition: "get off; leave a train, bus, or vehicle",
+    jlpt: "N5",
+    hintEmoji: "🚉"
+  },
+  {
+    id: "owarimasu-001",
+    hiragana: "おわります",
+    romaji: "owarimasu",
+    english: "end",
+    category: "time",
+    definition: "to finish or come to an end",
+    jlpt: "N5",
+    hintEmoji: "🏁"
+  },
+  {
+    id: "kaerimasu-001",
+    hiragana: "かえります",
+    romaji: "kaerimasu",
+    english: "return",
+    category: "action",
+    definition: "to go back home or return",
+    jlpt: "N5",
+    hintEmoji: "🏠"
+  },
+  {
+    id: "kakarimasu-001",
+    hiragana: "かかります",
+    romaji: "kakarimasu",
+    english: "take time",
+    category: "time",
+    definition: "to take time or cost money",
+    refinedDefinition: "take time/cost; used for time or money needed",
+    jlpt: "N5",
+    hintEmoji: "⏳"
+  },
+  {
+    id: "kaburimasu-001",
+    hiragana: "かぶります",
+    romaji: "kaburimasu",
+    english: "wear on head",
+    category: "clothing",
+    definition: "to wear something on the head",
+    refinedDefinition: "wear on the head; used for hats and caps",
+    jlpt: "N5",
+    hintEmoji: "🧢"
+  },
+  {
+    id: "karai-001",
+    hiragana: "からい",
+    romaji: "karai",
+    english: "spicy",
+    category: "food",
+    definition: "hot or spicy in taste",
+    jlpt: "N5",
+    hintEmoji: "🌶️"
+  },
+  {
+    id: "karimasu-001",
+    hiragana: "かります",
+    romaji: "karimasu",
+    english: "borrow",
+    category: "action",
+    definition: "to borrow something",
+    jlpt: "N5",
+    hintEmoji: "🤲"
+  },
+  {
+    id: "kiiroi-001",
+    hiragana: "きいろい",
+    romaji: "kiiroi",
+    english: "yellow",
+    category: "color",
+    definition: "yellow in color",
+    jlpt: "N5",
+    hintEmoji: "🟡"
+  },
+  {
+    id: "kiemasu-001",
+    hiragana: "きえます",
+    romaji: "kiemasu",
+    english: "disappear",
+    category: "action",
+    definition: "to disappear or go out",
+    refinedDefinition: "disappear; also used when lights go out",
+    jlpt: "N5",
+    hintEmoji: "🫥"
+  },
+  {
+    id: "kikimasu-001",
+    hiragana: "ききます",
+    romaji: "kikimasu",
+    english: "listen",
+    category: "communication",
+    definition: "to listen or ask",
+    refinedDefinition: "listen/ask; hear sound or ask a question",
+    jlpt: "N5",
+    hintEmoji: "👂"
+  },
+  {
+    id: "kitanai-001",
+    hiragana: "きたない",
+    romaji: "kitanai",
+    english: "dirty",
+    category: "description",
+    definition: "not clean",
+    jlpt: "N5",
+    hintEmoji: "🧽"
+  },
+  {
+    id: "kissaten-001",
+    hiragana: "きっさてん",
+    romaji: "kissaten",
+    english: "cafe",
+    category: "place",
+    definition: "a coffee shop or cafe",
+    jlpt: "N5",
+    hintEmoji: "☕"
+  },
+  {
+    id: "kite-001",
+    hiragana: "きって",
+    romaji: "kitte",
+    english: "stamp",
+    category: "object",
+    definition: "a postage stamp",
+    refinedDefinition: "stamp; used for mailing letters",
+    jlpt: "N5",
+    hintEmoji: "📮"
+  },
+  {
+    id: "kimasu-001",
+    hiragana: "きます",
+    romaji: "kimasu",
+    english: "wear",
+    category: "clothing",
+    definition: "to wear clothes",
+    refinedDefinition: "wear; used for clothing on the body",
+    jlpt: "N5",
+    hintEmoji: "👕"
+  },
+  {
+    id: "kirimasu-001",
+    hiragana: "きります",
+    romaji: "kirimasu",
+    english: "cut",
+    category: "action",
+    definition: "to cut something",
+    jlpt: "N5",
+    hintEmoji: "✂️"
+  },
+  {
+    id: "ginkou-001",
+    hiragana: "ぎんこう",
+    romaji: "ginkou",
+    english: "bank",
+    category: "place",
+    definition: "a place for money services",
+    jlpt: "N5",
+    hintEmoji: "🏦"
+  },
+  {
+    id: "kudamono-001",
+    hiragana: "くだもの",
+    romaji: "kudamono",
+    english: "fruit",
+    category: "food",
+    definition: "sweet food that grows on plants",
+    jlpt: "N5",
+    hintEmoji: "🍎"
+  },
+  {
+    id: "getsuyoubi-001",
+    hiragana: "げつようび",
+    romaji: "getsuyoubi",
+    english: "Monday",
+    category: "time",
+    definition: "the day after Sunday",
+    jlpt: "N5",
+    hintEmoji: "📅"
+  },
+  {
+    id: "kotoshi-001",
+    hiragana: "ことし",
+    romaji: "kotoshi",
+    english: "this year",
+    category: "time",
+    definition: "the present year",
+    jlpt: "N5",
+    hintEmoji: "🗓️"
+  },
+  {
+    id: "kongetsu-001",
+    hiragana: "こんげつ",
+    romaji: "kongetsu",
+    english: "this month",
+    category: "time",
+    definition: "the present month",
+    jlpt: "N5",
+    hintEmoji: "🗓️"
+  },
+  {
+    id: "konshuu-001",
+    hiragana: "こんしゅう",
+    romaji: "konshuu",
+    english: "this week",
+    category: "time",
+    definition: "the present week",
+    jlpt: "N5",
+    hintEmoji: "📆"
+  },
+  {
+    id: "sakubun-001",
+    hiragana: "さくぶん",
+    romaji: "sakubun",
+    english: "composition",
+    category: "study",
+    definition: "a written composition",
+    refinedDefinition: "composition; a piece of writing for class",
+    jlpt: "N5",
+    hintEmoji: "📝"
+  },
+  {
+    id: "shiroi-001",
+    hiragana: "しろい",
+    romaji: "shiroi",
+    english: "white",
+    category: "color",
+    definition: "white in color",
+    jlpt: "N5",
+    hintEmoji: "⚪"
+  },
+  {
+    id: "shizuka-001",
+    hiragana: "しずか",
+    romaji: "shizuka",
+    english: "quiet",
+    category: "description",
+    definition: "calm and not noisy",
+    jlpt: "N5",
+    hintEmoji: "🤫"
+  },
+  {
+    id: "sukoshi-001",
+    hiragana: "すこし",
+    romaji: "sukoshi",
+    english: "a little",
+    category: "concept",
+    definition: "a small amount",
+    jlpt: "N5",
+    hintEmoji: "🤏"
+  },
+  {
+    id: "suzushii-001",
+    hiragana: "すずしい",
+    romaji: "suzushii",
+    english: "cool",
+    category: "weather",
+    definition: "pleasantly cool",
+    jlpt: "N5",
+    hintEmoji: "🍃"
+  },
+  {
+    id: "semai-001",
+    hiragana: "せまい",
+    romaji: "semai",
+    english: "narrow",
+    category: "description",
+    definition: "not wide",
+    jlpt: "N5",
+    hintEmoji: "↔️"
+  },
+  {
+    id: "sengetsu-001",
+    hiragana: "せんげつ",
+    romaji: "sengetsu",
+    english: "last month",
+    category: "time",
+    definition: "the month before this one",
+    jlpt: "N5",
+    hintEmoji: "📆"
+  },
+  {
+    id: "senshuu-001",
+    hiragana: "せんしゅう",
+    romaji: "senshuu",
+    english: "last week",
+    category: "time",
+    definition: "the week before this one",
+    jlpt: "N5",
+    hintEmoji: "📆"
+  },
+  {
+    id: "takusan-001",
+    hiragana: "たくさん",
+    romaji: "takusan",
+    english: "many",
+    category: "concept",
+    definition: "a lot or many",
+    jlpt: "N5",
+    hintEmoji: "🔢"
+  },
+  {
+    id: "dashimasu-001",
+    hiragana: "だします",
+    romaji: "dashimasu",
+    english: "take out",
+    category: "action",
+    definition: "to take out or hand in",
+    refinedDefinition: "take out/submit; put something out from inside",
+    jlpt: "N5",
+    hintEmoji: "📤"
+  },
+  {
+    id: "tats-001",
+    hiragana: "たつ",
+    romaji: "tatsu",
+    english: "stand",
+    category: "action",
+    definition: "to stand up",
+    jlpt: "N5",
+    hintEmoji: "🧍"
+  },
+  {
+    id: "chigaimasu-001",
+    hiragana: "ちがいます",
+    romaji: "chigaimasu",
+    english: "differ",
+    category: "concept",
+    definition: "to be different or wrong",
+    jlpt: "N5",
+    hintEmoji: "❌"
+  },
+  {
+    id: "tsukaimasu-001",
+    hiragana: "つかいます",
+    romaji: "tsukaimasu",
+    english: "use",
+    category: "action",
+    definition: "to use something",
+    jlpt: "N5",
+    hintEmoji: "🛠️"
+  },
+  {
+    id: "tsukaremasu-001",
+    hiragana: "つかれます",
+    romaji: "tsukaremasu",
+    english: "get tired",
+    category: "health",
+    definition: "to become tired",
+    jlpt: "N5",
+    hintEmoji: "😮‍💨"
+  },
+  {
+    id: "tsukurimasu-001",
+    hiragana: "つくります",
+    romaji: "tsukurimasu",
+    english: "make",
+    category: "action",
+    definition: "to make or create",
+    jlpt: "N5",
+    hintEmoji: "🧑‍🍳"
+  },
+  {
+    id: "tsukemasu-001",
+    hiragana: "つけます",
+    romaji: "tsukemasu",
+    english: "turn on",
+    category: "action",
+    definition: "to turn on or attach",
+    refinedDefinition: "turn on/attach; used for lights or putting something on",
+    jlpt: "N5",
+    hintEmoji: "🔌"
+  },
+  {
+    id: "dekimasu-001",
+    hiragana: "できます",
+    romaji: "dekimasu",
+    english: "can do",
+    category: "concept",
+    definition: "to be able to do something",
+    jlpt: "N5",
+    hintEmoji: "✅"
+  },
+  {
+    id: "demasu-001",
+    hiragana: "でます",
+    romaji: "demasu",
+    english: "go out",
+    category: "action",
+    definition: "to leave or go out",
+    jlpt: "N5",
+    hintEmoji: "🚪"
+  },
+  {
+    id: "nakushimasu-001",
+    hiragana: "なくします",
+    romaji: "nakushimasu",
+    english: "lose",
+    category: "action",
+    definition: "to lose something",
+    jlpt: "N5",
+    hintEmoji: "🔎"
+  },
+  {
+    id: "naraimasu-001",
+    hiragana: "ならいます",
+    romaji: "naraimasu",
+    english: "learn",
+    category: "study",
+    definition: "to learn from someone",
+    refinedDefinition: "learn; usually from a teacher or lesson",
+    jlpt: "N5",
+    hintEmoji: "📚"
+  },
+  {
+    id: "nugimasu-001",
+    hiragana: "ぬぎます",
+    romaji: "nugimasu",
+    english: "take off",
+    category: "clothing",
+    definition: "to take off clothes or shoes",
+    jlpt: "N5",
+    hintEmoji: "👟"
+  },
+  {
+    id: "nemasu-001",
+    hiragana: "ねます",
+    romaji: "nemasu",
+    english: "sleep",
+    category: "action",
+    definition: "to sleep or go to bed",
+    jlpt: "N5",
+    hintEmoji: "🛌"
+  },
+  {
+    id: "norimasu-001",
+    hiragana: "のります",
+    romaji: "norimasu",
+    english: "ride",
+    category: "transport",
+    definition: "to ride or get on a vehicle",
+    jlpt: "N5",
+    hintEmoji: "🚌"
+  },
+  {
+    id: "hatarakimasu-001",
+    hiragana: "はたらきます",
+    romaji: "hatarakimasu",
+    english: "work",
+    category: "work",
+    definition: "to work",
+    jlpt: "N5",
+    hintEmoji: "💼"
+  },
+  {
+    id: "hanashimasu-001",
+    hiragana: "はなします",
+    romaji: "hanashimasu",
+    english: "speak",
+    category: "communication",
+    definition: "to speak or talk",
+    jlpt: "N5",
+    hintEmoji: "💬"
+  },
+  {
+    id: "hikui-001",
+    hiragana: "ひくい",
+    romaji: "hikui",
+    english: "low",
+    category: "description",
+    definition: "low in height or level",
+    jlpt: "N5",
+    hintEmoji: "⬇️"
+  },
+  {
+    id: "magarimasu-001",
+    hiragana: "まがります",
+    romaji: "magarimasu",
+    english: "turn",
+    category: "transport",
+    definition: "to turn a corner",
+    jlpt: "N5",
+    hintEmoji: "↪️"
+  },
+  {
+    id: "machimasu-001",
+    hiragana: "まちます",
+    romaji: "machimasu",
+    english: "wait",
+    category: "action",
+    definition: "to wait",
+    jlpt: "N5",
+    hintEmoji: "⌛"
+  },
+  {
+    id: "marui-001",
+    hiragana: "まるい",
+    romaji: "marui",
+    english: "round",
+    category: "shape",
+    definition: "round in shape",
+    jlpt: "N5",
+    hintEmoji: "⭕"
+  },
+  {
+    id: "migakimasu-001",
+    hiragana: "みがきます",
+    romaji: "migakimasu",
+    english: "polish",
+    category: "action",
+    definition: "to brush or polish",
+    refinedDefinition: "brush/polish; used for teeth or surfaces",
+    jlpt: "N5",
+    hintEmoji: "🪥"
+  },
+  {
+    id: "yasumi-001",
+    hiragana: "やすみ",
+    romaji: "yasumi",
+    english: "rest",
+    category: "time",
+    definition: "a rest, break, or holiday",
+    jlpt: "N5",
+    hintEmoji: "🛋️"
+  },
+  {
+    id: "yobimasu-001",
+    hiragana: "よびます",
+    romaji: "yobimasu",
+    english: "call",
+    category: "communication",
+    definition: "to call or invite",
+    jlpt: "N5",
+    hintEmoji: "📣"
+  },
+  {
+    id: "yomimasu-001",
+    hiragana: "よみます",
+    romaji: "yomimasu",
+    english: "read",
+    category: "study",
+    definition: "to read",
+    jlpt: "N5",
+    hintEmoji: "📖"
+  },
+  {
+    id: "wakarimasu-001",
+    hiragana: "わかります",
+    romaji: "wakarimasu",
+    english: "understand",
+    category: "study",
+    definition: "to understand",
+    jlpt: "N5",
+    hintEmoji: "💡"
+  },
+  {
+    id: "wasuremasu-001",
+    hiragana: "わすれます",
+    romaji: "wasuremasu",
+    english: "forget",
+    category: "concept",
+    definition: "to forget",
+    jlpt: "N5",
+    hintEmoji: "🧠"
+  },
+  {
+    id: "tsumaranai-001",
+    hiragana: "つまらない",
+    romaji: "tsumaranai",
+    english: "boring",
+    category: "description",
+    definition: "not interesting",
+    refinedDefinition: "boring; dull or not interesting",
+    jlpt: "N4",
+    hintEmoji: "🥱"
+  },
+  {
+    id: "asai-001",
+    hiragana: "あさい",
+    romaji: "asai",
+    english: "shallow",
+    category: "description",
+    definition: "not deep",
+    jlpt: "N4",
+    hintEmoji: "🏖️"
+  },
+  {
+    id: "fukai-001",
+    hiragana: "ふかい",
+    romaji: "fukai",
+    english: "deep",
+    category: "description",
+    definition: "far down or inward",
+    jlpt: "N4",
+    hintEmoji: "🌊"
+  },
+  {
+    id: "hiroi-001",
+    hiragana: "ひろい",
+    romaji: "hiroi",
+    english: "wide",
+    category: "description",
+    definition: "large from side to side",
+    jlpt: "N4",
+    hintEmoji: "↔️"
+  },
+  {
+    id: "warui-001",
+    hiragana: "わるい",
+    romaji: "warui",
+    english: "bad",
+    category: "description",
+    definition: "not good",
+    jlpt: "N4",
+    hintEmoji: "👎"
+  },
+  {
+    id: "karui-001",
+    hiragana: "かるい",
+    romaji: "karui",
+    english: "light",
+    category: "description",
+    definition: "not heavy",
+    refinedDefinition: "light; low in weight",
+    jlpt: "N4",
+    hintEmoji: "🪶"
+  },
+  {
+    id: "tsuyoi-001",
+    hiragana: "つよい",
+    romaji: "tsuyoi",
+    english: "strong",
+    category: "description",
+    definition: "having power or strength",
+    jlpt: "N4",
+    hintEmoji: "💪"
+  },
+  {
+    id: "yowai-001",
+    hiragana: "よわい",
+    romaji: "yowai",
+    english: "weak",
+    category: "description",
+    definition: "not strong",
+    jlpt: "N4",
+    hintEmoji: "🪫"
+  },
+  {
+    id: "kurai-001",
+    hiragana: "くらい",
+    romaji: "kurai",
+    english: "dark",
+    category: "description",
+    definition: "having little light",
+    jlpt: "N4",
+    hintEmoji: "🌑"
+  },
+  {
+    id: "katai-001",
+    hiragana: "かたい",
+    romaji: "katai",
+    english: "hard",
+    category: "description",
+    definition: "solid and difficult to bend",
+    jlpt: "N4",
+    hintEmoji: "🪨"
+  },
+  {
+    id: "yawarakai-001",
+    hiragana: "やわらかい",
+    romaji: "yawarakai",
+    english: "soft",
+    category: "description",
+    definition: "easy to press or bend",
+    jlpt: "N4",
+    hintEmoji: "🧸"
+  },
+  {
+    id: "amai-001",
+    hiragana: "あまい",
+    romaji: "amai",
+    english: "sweet",
+    category: "food",
+    definition: "having a sugar-like taste",
+    jlpt: "N4",
+    hintEmoji: "🍯"
+  },
+  {
+    id: "nigai-001",
+    hiragana: "にがい",
+    romaji: "nigai",
+    english: "bitter",
+    category: "food",
+    definition: "having a bitter taste",
+    jlpt: "N4",
+    hintEmoji: "☕"
+  },
+  {
+    id: "usui-001",
+    hiragana: "うすい",
+    romaji: "usui",
+    english: "thin",
+    category: "description",
+    definition: "thin, light, or weak in concentration",
+    refinedDefinition: "thin/light; low thickness or weak flavor/color",
+    jlpt: "N4",
+    hintEmoji: "📄"
+  },
+  {
+    id: "futoi-001",
+    hiragana: "ふとい",
+    romaji: "futoi",
+    english: "thick",
+    category: "description",
+    definition: "thick or wide around",
+    jlpt: "N4",
+    hintEmoji: "🪵"
+  },
+  {
+    id: "hosoi-001",
+    hiragana: "ほそい",
+    romaji: "hosoi",
+    english: "slender",
+    category: "description",
+    definition: "thin and narrow",
+    jlpt: "N4",
+    hintEmoji: "🧵"
+  },
+  {
+    id: "wakai-001",
+    hiragana: "わかい",
+    romaji: "wakai",
+    english: "young",
+    category: "person",
+    definition: "not old",
+    jlpt: "N4",
+    hintEmoji: "🧒"
+  },
+  {
+    id: "chairoi-001",
+    hiragana: "ちゃいろい",
+    romaji: "chairoi",
+    english: "brown",
+    category: "color",
+    definition: "brown in color",
+    jlpt: "N4",
+    hintEmoji: "🟤"
+  },
+  {
+    id: "nurui-001",
+    hiragana: "ぬるい",
+    romaji: "nurui",
+    english: "lukewarm",
+    category: "description",
+    definition: "not hot enough",
+    refinedDefinition: "lukewarm; mildly warm, often too cool for hot drinks",
+    jlpt: "N4",
+    hintEmoji: "♨️",
+    closeAnswers: ["あたたかい", "すずしい"],
+    confusableWords: [
+      {
+        word: "あたたかい",
+        romaji: "atatakai",
+        english: "warm",
+        note: "Warm can be pleasantly warm; ぬるい is lukewarm, often not hot enough."
+      },
+      {
+        word: "すずしい",
+        romaji: "suzushii",
+        english: "cool",
+        note: "Cool is refreshing; ぬるい is lukewarm."
+      }
+    ]
+  },
+  {
+    id: "hidoi-001",
+    hiragana: "ひどい",
+    romaji: "hidoi",
+    english: "terrible",
+    category: "description",
+    definition: "very bad or harsh",
+    jlpt: "N4",
+    hintEmoji: "😣"
+  },
+  {
+    id: "mezurashii-001",
+    hiragana: "めずらしい",
+    romaji: "mezurashii",
+    english: "rare",
+    category: "description",
+    definition: "unusual or not often seen",
+    jlpt: "N4",
+    hintEmoji: "💎",
+    closeAnswers: ["とくべつ", "ゆうめい"],
+    confusableWords: [
+      {
+        word: "とくべつ",
+        romaji: "tokubetsu",
+        english: "special",
+        note: "Special means not ordinary; めずらしい means rare or uncommon."
+      },
+      {
+        word: "ゆうめい",
+        romaji: "yuumei",
+        english: "famous",
+        note: "Famous is widely known; めずらしい is rare."
+      }
+    ]
+  },
+  {
+    id: "abunai-001",
+    hiragana: "あぶない",
+    romaji: "abunai",
+    english: "dangerous",
+    category: "description",
+    definition: "not safe",
+    jlpt: "N4",
+    hintEmoji: "⚠️",
+    closeAnswers: ["こわい", "だめ"],
+    confusableWords: [
+      {
+        word: "こわい",
+        romaji: "kowai",
+        english: "scary",
+        note: "Scary is the feeling; あぶない means dangerous or unsafe."
+      },
+      {
+        word: "だめ",
+        romaji: "dame",
+        english: "no good",
+        note: "No good/not allowed is broader; あぶない specifically means dangerous."
+      }
+    ]
+  },
+  {
+    id: "sugoi-001",
+    hiragana: "すごい",
+    romaji: "sugoi",
+    english: "amazing",
+    category: "description",
+    definition: "amazing, great, or intense",
+    jlpt: "N4",
+    hintEmoji: "🤩"
+  },
+  {
+    id: "tadashii-001",
+    hiragana: "ただしい",
+    romaji: "tadashii",
+    english: "correct",
+    category: "concept",
+    definition: "right or correct",
+    jlpt: "N4",
+    hintEmoji: "✅",
+    closeAnswers: ["じょうず"],
+    confusableWords: [
+      {
+        word: "じょうず",
+        romaji: "jouzu",
+        english: "skillful",
+        note: "Skillful means good at something; ただしい means correct."
+      }
+    ]
+  },
+  {
+    id: "sabishii-001",
+    hiragana: "さびしい",
+    romaji: "sabishii",
+    english: "lonely",
+    category: "feeling",
+    definition: "feeling alone or lonely",
+    jlpt: "N4",
+    hintEmoji: "🥺",
+    closeAnswers: ["かなしい"],
+    confusableWords: [
+      {
+        word: "かなしい",
+        romaji: "kanashii",
+        english: "sad",
+        note: "Sad is broader; さびしい is loneliness or missing someone."
+      }
+    ]
+  },
+  {
+    id: "okashii-001",
+    hiragana: "おかしい",
+    romaji: "okashii",
+    english: "strange",
+    category: "description",
+    definition: "strange, odd, or funny",
+    refinedDefinition: "strange/funny; not normal or amusing",
+    jlpt: "N4",
+    hintEmoji: "🤔",
+    closeAnswers: ["へん"],
+    confusableWords: [
+      {
+        word: "へん",
+        romaji: "hen",
+        english: "strange",
+        note: "Very close; おかしい can also mean funny, suspicious, or off."
+      }
+    ]
+  },
+  {
+    id: "utsukushii-001",
+    hiragana: "うつくしい",
+    romaji: "utsukushii",
+    english: "beautiful",
+    category: "description",
+    definition: "beautiful in appearance or feeling",
+    jlpt: "N4",
+    hintEmoji: "🌸",
+    closeAnswers: ["きれい"],
+    confusableWords: [
+      {
+        word: "きれい",
+        romaji: "kirei",
+        english: "pretty/clean",
+        note: "きれい can mean pretty or clean; うつくしい is more specifically beautiful."
+      }
+    ]
+  },
+  {
+    id: "fukuzatsu-001",
+    hiragana: "ふくざつ",
+    romaji: "fukuzatsu",
+    english: "complicated",
+    category: "concept",
+    definition: "not simple",
+    jlpt: "N4",
+    hintEmoji: "🧩",
+    closeAnswers: ["むずかしい"],
+    confusableWords: [
+      {
+        word: "むずかしい",
+        romaji: "muzukashii",
+        english: "difficult",
+        note: "Difficult is hard to do; ふくざつ means complicated with many parts."
+      }
+    ]
+  },
+  {
+    id: "kirei-001",
+    hiragana: "きれい",
+    romaji: "kirei",
+    english: "pretty",
+    category: "description",
+    definition: "pretty or clean",
+    refinedDefinition: "pretty/clean; beautiful in appearance or neat",
+    jlpt: "N4",
+    hintEmoji: "✨",
+    closeAnswers: ["うつくしい"],
+    confusableWords: [
+      {
+        word: "うつくしい",
+        romaji: "utsukushii",
+        english: "beautiful",
+        note: "Beautiful is more specific; きれい can also mean clean or neat."
+      }
+    ]
+  },
+  {
+    id: "shitsurei-001",
+    hiragana: "しつれい",
+    romaji: "shitsurei",
+    english: "rude",
+    category: "person",
+    definition: "rude or impolite",
+    jlpt: "N4",
+    hintEmoji: "🙇"
+  },
+  {
+    id: "yuumei-001",
+    hiragana: "ゆうめい",
+    romaji: "yuumei",
+    english: "famous",
+    category: "person",
+    definition: "known by many people",
+    jlpt: "N4",
+    hintEmoji: "⭐",
+    closeAnswers: ["めずらしい", "とくべつ"],
+    confusableWords: [
+      {
+        word: "めずらしい",
+        romaji: "mezurashii",
+        english: "rare",
+        note: "Rare means uncommon; ゆうめい means famous or well-known."
+      },
+      {
+        word: "とくべつ",
+        romaji: "tokubetsu",
+        english: "special",
+        note: "Special is not ordinary; ゆうめい is known by many people."
+      }
+    ]
+  },
+  {
+    id: "teinei-001",
+    hiragana: "ていねい",
+    romaji: "teinei",
+    english: "polite",
+    category: "person",
+    definition: "careful and polite",
+    jlpt: "N4",
+    hintEmoji: "🙏",
+    closeAnswers: ["しんせつ", "まじめ"],
+    confusableWords: [
+      {
+        word: "しんせつ",
+        romaji: "shinsetsu",
+        english: "kind",
+        note: "Kind is helpful; ていねい is polite or careful."
+      },
+      {
+        word: "まじめ",
+        romaji: "majime",
+        english: "serious",
+        note: "Serious is sincere; ていねい is polite/careful."
+      }
+    ]
+  },
+  {
+    id: "kirai-001",
+    hiragana: "きらい",
+    romaji: "kirai",
+    english: "dislike",
+    category: "feeling",
+    definition: "not liking something",
+    jlpt: "N4",
+    hintEmoji: "🙅",
+    closeAnswers: ["いや"],
+    confusableWords: [
+      {
+        word: "いや",
+        romaji: "iya",
+        english: "unpleasant",
+        note: "Unpleasant is a feeling of rejection; きらい means dislike."
+      }
+    ]
+  },
+  {
+    id: "shinsetsu-001",
+    hiragana: "しんせつ",
+    romaji: "shinsetsu",
+    english: "kind",
+    category: "person",
+    definition: "kind and helpful",
+    jlpt: "N4",
+    hintEmoji: "🤝",
+    closeAnswers: ["ていねい"],
+    confusableWords: [
+      {
+        word: "ていねい",
+        romaji: "teinei",
+        english: "polite",
+        note: "Polite is careful/respectful; しんせつ means kind or helpful."
+      }
+    ]
+  },
+  {
+    id: "juubun-001",
+    hiragana: "じゅうぶん",
+    romaji: "juubun",
+    english: "enough",
+    category: "concept",
+    definition: "enough or sufficient",
+    jlpt: "N4",
+    hintEmoji: "✅",
+    closeAnswers: ["ひつよう"],
+    confusableWords: [
+      {
+        word: "ひつよう",
+        romaji: "hitsuyou",
+        english: "necessary",
+        note: "Necessary means needed; じゅうぶん means enough or sufficient."
+      }
+    ]
+  },
+  {
+    id: "daisuki-001",
+    hiragana: "だいすき",
+    romaji: "daisuki",
+    english: "love",
+    category: "feeling",
+    definition: "to like very much",
+    refinedDefinition: "love/like very much; stronger than すき",
+    jlpt: "N4",
+    hintEmoji: "❤️",
+    closeAnswers: ["すき"],
+    confusableWords: [
+      {
+        word: "すき",
+        romaji: "suki",
+        english: "like",
+        note: "Like is milder; だいすき means really like or love."
+      }
+    ]
+  },
+  {
+    id: "tekitou-001",
+    hiragana: "てきとう",
+    romaji: "tekitou",
+    english: "suitable",
+    category: "concept",
+    definition: "suitable or appropriate",
+    refinedDefinition: "suitable/appropriate; also casual or careless by context",
+    jlpt: "N4",
+    hintEmoji: "🎯",
+    closeAnswers: ["じゅうぶん"],
+    confusableWords: [
+      {
+        word: "じゅうぶん",
+        romaji: "juubun",
+        english: "enough",
+        note: "Enough means sufficient; てきとう means suitable or appropriate."
+      }
+    ]
+  },
+  {
+    id: "nesshin-001",
+    hiragana: "ねっしん",
+    romaji: "nesshin",
+    english: "enthusiastic",
+    category: "person",
+    definition: "eager and serious about something",
+    jlpt: "N4",
+    hintEmoji: "🔥",
+    closeAnswers: ["まじめ"],
+    confusableWords: [
+      {
+        word: "まじめ",
+        romaji: "majime",
+        english: "serious",
+        note: "Serious is sincere; ねっしん is enthusiastic or eager."
+      }
+    ]
+  },
+  {
+    id: "majime-001",
+    hiragana: "まじめ",
+    romaji: "majime",
+    english: "serious",
+    category: "person",
+    definition: "serious and sincere",
+    jlpt: "N4",
+    hintEmoji: "🧑‍💼",
+    closeAnswers: ["ねっしん", "ていねい"],
+    confusableWords: [
+      {
+        word: "ねっしん",
+        romaji: "nesshin",
+        english: "enthusiastic",
+        note: "Enthusiastic is eager; まじめ is serious and sincere."
+      },
+      {
+        word: "ていねい",
+        romaji: "teinei",
+        english: "polite",
+        note: "Polite is careful/respectful; まじめ is serious."
+      }
+    ]
+  },
+  {
+    id: "hen-001",
+    hiragana: "へん",
+    romaji: "hen",
+    english: "strange",
+    category: "description",
+    definition: "strange or odd",
+    jlpt: "N4",
+    hintEmoji: "❓",
+    closeAnswers: ["おかしい"],
+    confusableWords: [
+      {
+        word: "おかしい",
+        romaji: "okashii",
+        english: "strange/funny",
+        note: "Very close; へん is plain strange or odd."
+      }
+    ]
+  },
+  {
+    id: "muri-001",
+    hiragana: "むり",
+    romaji: "muri",
+    english: "impossible",
+    category: "concept",
+    definition: "impossible or unreasonable",
+    jlpt: "N4",
+    hintEmoji: "🚫",
+    closeAnswers: ["だめ"],
+    confusableWords: [
+      {
+        word: "だめ",
+        romaji: "dame",
+        english: "no good",
+        note: "No good/not allowed is broader; むり means impossible or unreasonable."
+      }
+    ]
+  },
+  {
+    id: "daijoubu-001",
+    hiragana: "だいじょうぶ",
+    romaji: "daijoubu",
+    english: "okay",
+    category: "concept",
+    definition: "okay, safe, or all right",
+    jlpt: "N4",
+    hintEmoji: "👌",
+    closeAnswers: ["あんぜん"],
+    confusableWords: [
+      {
+        word: "あんぜん",
+        romaji: "anzen",
+        english: "safe",
+        note: "Safe is about danger; だいじょうぶ means okay/all right more broadly."
+      }
+    ]
+  },
+  {
+    id: "dame-001",
+    hiragana: "だめ",
+    romaji: "dame",
+    english: "no good",
+    category: "concept",
+    definition: "not allowed or no good",
+    jlpt: "N4",
+    hintEmoji: "🙅",
+    closeAnswers: ["むり", "いや"],
+    confusableWords: [
+      {
+        word: "むり",
+        romaji: "muri",
+        english: "impossible",
+        note: "Impossible means cannot be done; だめ means no good or not allowed."
+      },
+      {
+        word: "いや",
+        romaji: "iya",
+        english: "unpleasant",
+        note: "Unpleasant is a feeling; だめ is no good/not allowed."
+      }
+    ]
+  },
+  {
+    id: "raku-001",
+    hiragana: "らく",
+    romaji: "raku",
+    english: "easy",
+    category: "description",
+    definition: "easy or comfortable",
+    refinedDefinition: "easy/comfortable; requiring little effort",
+    jlpt: "N4",
+    hintEmoji: "😌",
+    closeAnswers: ["かんたん"],
+    confusableWords: [
+      {
+        word: "かんたん",
+        romaji: "kantan",
+        english: "simple",
+        note: "Simple means not complicated; らく means easy or comfortable with little effort."
+      }
+    ]
+  },
+  {
+    id: "iya-001",
+    hiragana: "いや",
+    romaji: "iya",
+    english: "unpleasant",
+    category: "feeling",
+    definition: "unpleasant or disliked",
+    jlpt: "N4",
+    hintEmoji: "😖",
+    closeAnswers: ["きらい", "だめ"],
+    confusableWords: [
+      {
+        word: "きらい",
+        romaji: "kirai",
+        english: "dislike",
+        note: "Dislike is a preference; いや is an unpleasant/rejecting feeling."
+      },
+      {
+        word: "だめ",
+        romaji: "dame",
+        english: "no good",
+        note: "No good/not allowed is broader; いや is unpleasant."
+      }
+    ]
+  },
+  {
+    id: "daiji-001",
+    hiragana: "だいじ",
+    romaji: "daiji",
+    english: "important",
+    category: "concept",
+    definition: "important or valuable",
+    jlpt: "N4",
+    hintEmoji: "⭐",
+    closeAnswers: ["たいせつ", "ひつよう"],
+    confusableWords: [
+      {
+        word: "たいせつ",
+        romaji: "taisetsu",
+        english: "important",
+        note: "Very close; だいじ is common for important/valuable."
+      },
+      {
+        word: "ひつよう",
+        romaji: "hitsuyou",
+        english: "necessary",
+        note: "Necessary means needed; だいじ means important."
+      }
+    ]
+  },
+  {
+    id: "kantan-001",
+    hiragana: "かんたん",
+    romaji: "kantan",
+    english: "simple",
+    category: "description",
+    definition: "simple or easy",
+    jlpt: "N4",
+    hintEmoji: "🟢",
+    closeAnswers: ["らく", "やさしい"],
+    confusableWords: [
+      {
+        word: "らく",
+        romaji: "raku",
+        english: "easy/comfortable",
+        note: "Easy in effort; かんたん means simple or not difficult."
+      },
+      {
+        word: "やさしい",
+        romaji: "yasashii",
+        english: "easy/kind",
+        note: "やさしい can mean easy or kind; かんたん means simple."
+      }
+    ]
   }
 ];
 

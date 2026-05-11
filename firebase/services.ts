@@ -14,7 +14,15 @@ import {
   serverTimestamp,
   setDoc
 } from "firebase/firestore";
+import { wordPools } from "@/data/words";
 import { auth, db, isFirebaseConfigured } from "@/firebase/firebaseConfig";
+import { DailyPuzzle, JLPTLevel, WordEntry } from "@/types/game";
+
+export type StoredDailyPuzzle = {
+  date: string;
+  wordId: string;
+  jlptLevel: JLPTLevel;
+};
 
 export type DailyPlayData = {
   date: string;
@@ -53,6 +61,12 @@ type DailyPlayDoc = {
   completedAt?: unknown;
 };
 
+type DailyPuzzleDoc = {
+  wordId?: unknown;
+  jlptLevel?: unknown;
+  createdAt?: unknown;
+};
+
 function getYesterdayKey(date: string): string {
   const [year, month, day] = date.split("-").map(Number);
   const utcDate = new Date(Date.UTC(year, month - 1, day));
@@ -81,6 +95,22 @@ function playFromSnapshot(date: string, data: DailyPlayDoc): DailyPlay {
     guessesUsed: numberOrZero(data.guessesUsed),
     hintUsed: data.hintUsed === true,
     completedAt: timestampToDate(data.completedAt)
+  };
+}
+
+function isJLPTLevel(value: unknown): value is JLPTLevel {
+  return value === "N5" || value === "N4" || value === "N3";
+}
+
+function dailyPuzzleFromSnapshot(date: string, data: DailyPuzzleDoc): StoredDailyPuzzle | null {
+  if (typeof data.wordId !== "string" || !isJLPTLevel(data.jlptLevel)) {
+    return null;
+  }
+
+  return {
+    date,
+    wordId: data.wordId,
+    jlptLevel: data.jlptLevel
   };
 }
 
@@ -237,6 +267,63 @@ export async function getUserStats(uid: string, date: string): Promise<UserStats
   } catch (error) {
     console.warn("Firebase user stats load failed.", error);
     throw error;
+  }
+}
+
+export async function getOrCreateDailyPuzzle(localPuzzle: DailyPuzzle): Promise<DailyPuzzle> {
+  if (!isFirebaseConfigured) {
+    return localPuzzle;
+  }
+
+  try {
+    const puzzleRef = doc(db, "dailyPuzzles", localPuzzle.date);
+
+    const storedPuzzle = await runTransaction(db, async (transaction) => {
+      const puzzleSnapshot = await transaction.get(puzzleRef);
+
+      if (puzzleSnapshot.exists()) {
+        return dailyPuzzleFromSnapshot(
+          puzzleSnapshot.id,
+          puzzleSnapshot.data() as DailyPuzzleDoc
+        );
+      }
+
+      const nextStoredPuzzle = {
+        date: localPuzzle.date,
+        wordId: localPuzzle.word.id,
+        jlptLevel: localPuzzle.jlptLevel
+      };
+
+      transaction.set(puzzleRef, {
+        wordId: localPuzzle.word.id,
+        jlptLevel: localPuzzle.jlptLevel,
+        createdAt: serverTimestamp()
+      });
+
+      return nextStoredPuzzle;
+    });
+
+    if (!storedPuzzle || storedPuzzle.wordId === localPuzzle.word.id) {
+      return localPuzzle;
+    }
+
+    const storedWord = Object.values(wordPools)
+      .flat()
+      .find((candidate: WordEntry) => candidate.id === storedPuzzle?.wordId);
+
+    if (!storedWord) {
+      console.warn("Firebase daily puzzle word is missing locally. Using local fallback.");
+      return localPuzzle;
+    }
+
+    return {
+      date: storedPuzzle.date,
+      word: storedWord,
+      jlptLevel: storedPuzzle.jlptLevel
+    };
+  } catch (error) {
+    console.warn("Firebase daily puzzle load failed. Using local fallback.", error);
+    return localPuzzle;
   }
 }
 

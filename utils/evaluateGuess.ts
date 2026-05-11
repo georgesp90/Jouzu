@@ -1,9 +1,11 @@
 import { TileStatus } from "@/types/game";
 
-export function evaluateGuess(guess: string, answer: string): Exclude<TileStatus, "empty">[] {
+type EvaluatedTileStatus = Exclude<TileStatus, "empty" | "close">;
+
+export function evaluateGuess(guess: string, answer: string): EvaluatedTileStatus[] {
   const guessChars = Array.from(guess);
   const answerChars = Array.from(answer);
-  const result: Exclude<TileStatus, "empty">[] = Array(guessChars.length).fill("absent");
+  const result: EvaluatedTileStatus[] = Array(guessChars.length).fill("absent");
   const used = Array(answerChars.length).fill(false);
 
   for (let i = 0; i < guessChars.length; i += 1) {
