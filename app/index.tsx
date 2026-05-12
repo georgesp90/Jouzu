@@ -1061,6 +1061,7 @@ export default function GameScreen() {
         maxGuesses={maxGuesses}
         solved={solved}
         results={results}
+        isPerfectSolve={solved && guesses.length === 1}
         onClose={() => setShowResult(false)}
         reviewMode={isReviewFlashcardMode}
         onReviewCorrect={() => completeReviewCard("correct")}

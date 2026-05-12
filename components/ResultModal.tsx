@@ -1,5 +1,8 @@
+import { useEffect, useRef } from "react";
 import { Modal, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import ConfettiCannon from "react-native-confetti-cannon";
 import { TileStatus, WordEntry } from "@/types/game";
+import { speakJapanese, stopSpeech } from "@/utils/speech";
 
 type ResultModalProps = {
   visible: boolean;
@@ -9,6 +12,7 @@ type ResultModalProps = {
   maxGuesses: number;
   solved: boolean;
   results: TileStatus[][];
+  isPerfectSolve?: boolean;
   onClose: () => void;
   reviewMode?: boolean;
   onReviewCorrect?: () => void;
@@ -54,11 +58,42 @@ export function ResultModal({
   maxGuesses,
   solved,
   results,
+  isPerfectSolve = false,
   onClose,
   reviewMode = false,
   onReviewCorrect,
   onReviewIncorrect
 }: ResultModalProps) {
+  const canPlayPronunciation = Boolean(word.hiragana.trim());
+  const confettiKeyRef = useRef("");
+  const perfectSolveKey = `${word.id}:${guessCount}:${results.length}`;
+  const shouldShowPerfectSolve = !reviewMode && solved && isPerfectSolve;
+  const shouldFireConfetti =
+    visible && shouldShowPerfectSolve && confettiKeyRef.current !== perfectSolveKey;
+
+  if (shouldFireConfetti) {
+    confettiKeyRef.current = perfectSolveKey;
+  }
+
+  useEffect(() => {
+    if (!visible) {
+      void stopSpeech();
+    }
+
+    return () => {
+      void stopSpeech();
+    };
+  }, [visible]);
+
+  const handleClose = () => {
+    void stopSpeech();
+    onClose();
+  };
+
+  const handleSpeak = () => {
+    void speakJapanese(word.hiragana);
+  };
+
   const shareResult = async () => {
     await Share.share({
       message: buildShareText(word, puzzleNumber, guessCount, maxGuesses, solved, results)
@@ -66,16 +101,33 @@ export function ResultModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View style={styles.backdrop}>
         <View style={styles.modal}>
           <Text style={styles.eyebrow}>
             {reviewMode ? "Review card" : solved ? "Solved" : "Today's word"}
           </Text>
-          <Text style={styles.hiragana}>{word.hiragana}</Text>
-          <Text style={styles.translation}>
-            {word.romaji} - {word.english}
-          </Text>
+          <View style={styles.wordHeader}>
+            <Text style={styles.hiragana}>{word.hiragana}</Text>
+            <Text style={styles.romaji}>{word.romaji}</Text>
+            <Text style={styles.meaning}>{word.english}</Text>
+            {shouldShowPerfectSolve ? (
+              <View style={styles.perfectBlock}>
+                <Text style={styles.perfectTitle}>Perfect solve ⚡</Text>
+                <Text style={styles.perfectText}>You got it on the first try.</Text>
+              </View>
+            ) : null}
+            {canPlayPronunciation ? (
+              <Pressable
+                onPress={handleSpeak}
+                style={styles.speechButton}
+                accessibilityRole="button"
+                accessibilityLabel={`Hear ${word.hiragana}`}
+              >
+                <Text style={styles.speechButtonText}>🔊 Listen</Text>
+              </Pressable>
+            ) : null}
+          </View>
 
           <View style={styles.infoBlock}>
             <Text style={styles.infoText}>Category: {titleCase(word.category)}</Text>
@@ -118,12 +170,22 @@ export function ResultModal({
                 <Pressable onPress={shareResult} style={styles.primaryButton}>
                   <Text style={styles.primaryButtonText}>Share</Text>
                 </Pressable>
-                <Pressable onPress={onClose} style={styles.secondaryButton}>
+                <Pressable onPress={handleClose} style={styles.secondaryButton}>
                   <Text style={styles.secondaryButtonText}>Close</Text>
                 </Pressable>
               </>
             )}
           </View>
+          {shouldFireConfetti ? (
+            <ConfettiCannon
+              count={36}
+              origin={{ x: 210, y: -12 }}
+              fallSpeed={1800}
+              fadeOut
+              autoStart
+              colors={["#2f4f4a", "#d7aa42", "#f7f2ea", "#6f5a8e"]}
+            />
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -144,7 +206,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#fffdf8",
     padding: 24,
-    gap: 12
+    gap: 14
   },
   eyebrow: {
     color: "#7b6f60",
@@ -152,15 +214,62 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textTransform: "uppercase"
   },
+  wordHeader: {
+    gap: 3,
+    paddingTop: 2,
+    paddingBottom: 2
+  },
   hiragana: {
     color: "#25231f",
-    fontSize: 46,
+    fontSize: 52,
     fontWeight: "900",
-    lineHeight: 56
+    lineHeight: 60
   },
-  translation: {
-    color: "#3a3832",
-    fontSize: 20,
+  romaji: {
+    color: "#4d4840",
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 23
+  },
+  meaning: {
+    color: "#817565",
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 21
+  },
+  perfectBlock: {
+    alignSelf: "flex-start",
+    borderLeftWidth: 3,
+    borderLeftColor: "#d7aa42",
+    paddingLeft: 10,
+    marginTop: 8,
+    gap: 2
+  },
+  perfectTitle: {
+    color: "#2f4f4a",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  perfectText: {
+    color: "#817565",
+    fontSize: 13,
+    fontWeight: "600"
+  },
+  speechButton: {
+    alignSelf: "flex-start",
+    minHeight: 30,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#fffdf8",
+    paddingHorizontal: 10,
+    marginTop: 7,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  speechButtonText: {
+    color: "#2f4f4a",
+    fontSize: 13,
     fontWeight: "700"
   },
   infoBlock: {
