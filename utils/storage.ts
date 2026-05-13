@@ -5,13 +5,17 @@ const STORAGE_KEY = "jozu_daily_progress";
 const ROMAJI_STORAGE_KEY = "jozu_show_romaji";
 const WORD_MASTERY_STORAGE_KEY = "jozu_word_mastery";
 
-export async function loadProgress(): Promise<DailyProgress | null> {
-  const rawProgress = await AsyncStorage.getItem(STORAGE_KEY);
+function userScopedKey(key: string, uid?: string | null): string {
+  return uid ? `${key}:${uid}` : key;
+}
+
+export async function loadProgress(uid?: string | null): Promise<DailyProgress | null> {
+  const rawProgress = await AsyncStorage.getItem(userScopedKey(STORAGE_KEY, uid));
   return rawProgress ? (JSON.parse(rawProgress) as DailyProgress) : null;
 }
 
-export async function saveProgress(progress: DailyProgress): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+export async function saveProgress(progress: DailyProgress, uid?: string | null): Promise<void> {
+  await AsyncStorage.setItem(userScopedKey(STORAGE_KEY, uid), JSON.stringify(progress));
 }
 
 export async function loadShowRomajiPreference(): Promise<boolean | null> {
@@ -28,11 +32,24 @@ export async function saveShowRomajiPreference(showRomaji: boolean): Promise<voi
   await AsyncStorage.setItem(ROMAJI_STORAGE_KEY, String(showRomaji));
 }
 
-export async function loadWordMastery(): Promise<Record<string, WordMastery>> {
-  const rawMastery = await AsyncStorage.getItem(WORD_MASTERY_STORAGE_KEY);
+export async function loadWordMastery(uid?: string | null): Promise<Record<string, WordMastery>> {
+  const rawMastery = await AsyncStorage.getItem(userScopedKey(WORD_MASTERY_STORAGE_KEY, uid));
   return rawMastery ? (JSON.parse(rawMastery) as Record<string, WordMastery>) : {};
 }
 
-export async function saveWordMastery(masteryByWord: Record<string, WordMastery>): Promise<void> {
-  await AsyncStorage.setItem(WORD_MASTERY_STORAGE_KEY, JSON.stringify(masteryByWord));
+export async function saveWordMastery(
+  masteryByWord: Record<string, WordMastery>,
+  uid?: string | null
+): Promise<void> {
+  await AsyncStorage.setItem(userScopedKey(WORD_MASTERY_STORAGE_KEY, uid), JSON.stringify(masteryByWord));
+}
+
+export async function clearLocalJouzuData(uid?: string | null): Promise<void> {
+  const keys = [STORAGE_KEY, ROMAJI_STORAGE_KEY, WORD_MASTERY_STORAGE_KEY];
+
+  if (uid) {
+    keys.push(userScopedKey(STORAGE_KEY, uid), userScopedKey(WORD_MASTERY_STORAGE_KEY, uid));
+  }
+
+  await AsyncStorage.multiRemove(keys);
 }

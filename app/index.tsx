@@ -21,6 +21,7 @@ import { wordPools } from "@/data/words";
 import { auth } from "@/firebase/firebaseConfig";
 import {
   UserStats,
+  deleteCurrentAccount,
   getOrCreateDailyPuzzle,
   getSignedInUserId,
   getUserStats,
@@ -37,6 +38,7 @@ import { evaluateGuess } from "@/utils/evaluateGuess";
 import { getDailyPuzzle } from "@/utils/getDailyPuzzle";
 import { getPuzzleNumber, getTodayKey } from "@/utils/getWordOfTheDay";
 import {
+  clearLocalJouzuData,
   loadProgress,
   loadShowRomajiPreference,
   loadWordMastery,
@@ -278,6 +280,7 @@ export default function GameScreen() {
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [accountDeleting, setAccountDeleting] = useState(false);
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
   const maxTileSize = maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48;
@@ -308,13 +311,16 @@ export default function GameScreen() {
 
   const persistProgress = useCallback(
     async (nextProgress: Omit<DailyProgress, "date" | "wordId">) => {
-      await saveProgress({
-        date: todayKey,
-        wordId: word.id,
-        ...nextProgress
-      });
+      await saveProgress(
+        {
+          date: todayKey,
+          wordId: word.id,
+          ...nextProgress
+        },
+        firebaseUid
+      );
     },
-    [todayKey, word.id]
+    [firebaseUid, todayKey, word.id]
   );
 
   const resetBoard = (preserveMasteryFeedback = false) => {
@@ -368,7 +374,7 @@ export default function GameScreen() {
     setMasteryByWord((currentMastery) => {
       const nextMastery = getNextMastery(currentMastery, practiceWord, result);
 
-      void saveWordMastery(nextMastery);
+      void saveWordMastery(nextMastery, firebaseUid);
       return nextMastery;
     });
 
@@ -377,7 +383,20 @@ export default function GameScreen() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setLoading(true);
       setFirebaseUid(user?.uid ?? null);
+      setUserStats(null);
+      setStatsError("");
+      setGuesses([]);
+      setResults([]);
+      setCurrentGuess("");
+      setSolved(false);
+      setCompleted(false);
+      setShowResult(false);
+      setMasteryByWord({});
+      setMasteryFeedback("");
+      setWordsSolved(0);
+      setWordsAttempted(0);
       setAuthLoading(false);
 
       if (user) {
@@ -402,10 +421,11 @@ export default function GameScreen() {
 
     async function restoreProgress() {
       try {
+        const uid = firebaseUid ?? (await getSignedInUserId());
         const [saved, savedShowRomaji, savedMastery] = await Promise.all([
-          loadProgress(),
+          loadProgress(uid),
           loadShowRomajiPreference(),
-          loadWordMastery()
+          loadWordMastery(uid)
         ]);
         if (!mounted) {
           return;
@@ -416,7 +436,6 @@ export default function GameScreen() {
         }
         setMasteryByWord(savedMastery);
 
-        const uid = firebaseUid ?? (await getSignedInUserId());
         const syncedDailyPuzzle = uid
           ? await getOrCreateDailyPuzzle(localDailyPuzzle)
           : localDailyPuzzle;
@@ -471,7 +490,7 @@ export default function GameScreen() {
     resetBoard();
 
     if (nextGameMode === "daily") {
-      void loadProgress().then((saved) => {
+      void loadProgress(firebaseUid).then((saved) => {
         if (saved?.date === todayKey && saved.wordId === dailyPuzzle.word.id) {
           setGuesses(saved.guesses);
           setResults(saved.results);
@@ -521,7 +540,7 @@ export default function GameScreen() {
     const nextMastery = getNextMastery(masteryByWord, word, result);
 
     setMasteryByWord(nextMastery);
-    void saveWordMastery(nextMastery);
+    void saveWordMastery(nextMastery, firebaseUid);
     setMasteryFeedback(result === "correct" ? "Mastery +1" : "Added to Review");
     setShowResult(false);
     resetBoard(true);
@@ -670,6 +689,69 @@ export default function GameScreen() {
     setCompleted(false);
     setSolved(false);
     setShowResult(false);
+  };
+
+  const resetToAuthScreen = () => {
+    setShowSettings(false);
+    setShowStats(false);
+    setShowResult(false);
+    setGuesses([]);
+    setResults([]);
+    setCurrentGuess("");
+    setCompleted(false);
+    setSolved(false);
+    setFirebaseUid(null);
+    setAuthPassword("");
+    setAuthError("");
+  };
+
+  const confirmDeleteAccount = async () => {
+    setAccountDeleting(true);
+
+    try {
+      await deleteCurrentAccount();
+      await signOutOfJouzu();
+      await clearLocalJouzuData(firebaseUid);
+      setMasteryByWord({});
+      setShowRomaji(true);
+      resetToAuthScreen();
+      Alert.alert("Account deleted", "Your account has been permanently deleted.");
+    } catch (error) {
+      const code =
+        typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
+
+      if (code === "auth/requires-recent-login") {
+        await signOutOfJouzu();
+        await clearLocalJouzuData(firebaseUid);
+        resetToAuthScreen();
+        Alert.alert(
+          "Log in again",
+          "For security reasons, please log in again before deleting your account."
+        );
+      } else {
+        console.warn("Account deletion failed.", error);
+        Alert.alert("Could not delete account", "Please try again in a moment.");
+      }
+    } finally {
+      setAccountDeleting(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account?",
+      "This will permanently delete your account, streaks, progress, and saved data. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Permanently",
+          style: "destructive",
+          onPress: () => {
+            void confirmDeleteAccount();
+          }
+        }
+      ]
+    );
   };
 
   const handleKanaPress = (kana: string) => {
@@ -1079,7 +1161,7 @@ export default function GameScreen() {
             <View style={styles.statsHeader}>
               <View>
                 <Text style={styles.statsTitle}>Daily Results</Text>
-                <Text style={styles.statsSubtitle}>Your Jouzu history</Text>
+                <Text style={styles.statsSubtitle}>Your Jozu history</Text>
               </View>
               <Pressable
                 onPress={loadStats}
@@ -1130,7 +1212,7 @@ export default function GameScreen() {
                     </View>
                   ) : (
                     <Text style={styles.statsEmptyText}>
-                      Play today's word to start building your Jouzu history.
+                      Play today's word to start building your Jozu history.
                     </Text>
                   )}
                 </View>
@@ -1258,6 +1340,15 @@ export default function GameScreen() {
             <Text style={styles.accountText}>{auth.currentUser?.email ?? "Signed in"}</Text>
             <Pressable onPress={handleSignOut} style={styles.signOutButton}>
               <Text style={styles.signOutButtonText}>Sign Out</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleDeleteAccount}
+              disabled={accountDeleting}
+              style={[styles.deleteAccountButton, accountDeleting && styles.disabledDeleteAccountButton]}
+            >
+              <Text style={styles.deleteAccountButtonText}>
+                {accountDeleting ? "Deleting..." : "Delete Account"}
+              </Text>
             </Pressable>
             <Pressable onPress={() => setShowSettings(false)} style={styles.settingsCloseButton}>
               <Text style={styles.settingsCloseText}>Done</Text>
@@ -1904,6 +1995,23 @@ const styles = StyleSheet.create({
   },
   signOutButtonText: {
     color: "#2f4f4a",
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  deleteAccountButton: {
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#b94a48",
+    backgroundColor: "#fff6f4"
+  },
+  disabledDeleteAccountButton: {
+    opacity: 0.58
+  },
+  deleteAccountButtonText: {
+    color: "#9b3d35",
     fontSize: 13,
     fontWeight: "900"
   },

@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut
@@ -7,6 +8,7 @@ import {
 import {
   Timestamp,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -191,6 +193,24 @@ export async function signOutOfJouzu(): Promise<void> {
   } catch (error) {
     console.warn("Firebase sign out failed.", error);
   }
+}
+
+async function deleteUserFirestoreData(uid: string): Promise<void> {
+  const playsSnapshot = await getDocs(collection(db, "users", uid, "plays"));
+
+  await Promise.all(playsSnapshot.docs.map((playSnapshot) => deleteDoc(playSnapshot.ref)));
+  await deleteDoc(doc(db, "users", uid));
+}
+
+export async function deleteCurrentAccount(): Promise<void> {
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    throw new Error("No authenticated user is available to delete.");
+  }
+
+  await deleteUserFirestoreData(currentUser.uid);
+  await deleteUser(currentUser);
 }
 
 export async function initUserIfNeeded(uid: string, email?: string | null): Promise<void> {
