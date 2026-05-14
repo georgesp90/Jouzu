@@ -1,8 +1,10 @@
 import { useMemo, useRef, useState } from "react";
 import { Animated, PanResponder, Pressable, StyleSheet, Text, View } from "react-native";
-import * as Haptics from "expo-haptics";
+import type { ReactNode } from "react";
+import type { StyleProp, ViewStyle } from "react-native";
 import { TileStatus } from "@/types/game";
 import { getKanaRomaji } from "@/utils/kanaRomaji";
+import { MOTION } from "@/utils/motion";
 
 type KanaKeyboardProps = {
   onKanaPress: (kana: string) => void;
@@ -39,6 +41,40 @@ const keyStatusStyles: Partial<Record<TileStatus, { backgroundColor: string; col
   absent: { backgroundColor: "#9b9a94", color: "#ffffff" }
 };
 
+type PressScaleProps = {
+  onPress: () => void;
+  disabled?: boolean;
+  style: StyleProp<ViewStyle>;
+  children: ReactNode;
+};
+
+function PressScale({ onPress, disabled, style, children }: PressScaleProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const animateTo = (toValue: number) => {
+    Animated.spring(scale, {
+      toValue,
+      damping: 16,
+      stiffness: 340,
+      mass: 0.45,
+      useNativeDriver: true
+    }).start();
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => !disabled && animateTo(MOTION.pressScale)}
+      onPressOut={() => animateTo(1)}
+      disabled={disabled}
+    >
+      <Animated.View style={[style, { transform: [{ scale }] }]}>
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 export function KanaKeyboard({
   onKanaPress,
   onEnter,
@@ -65,7 +101,7 @@ export function KanaKeyboard({
     }
 
     slideX.setValue(direction * 44);
-    pageOpacity.setValue(0.35);
+    pageOpacity.setValue(0.45);
     setPageIndex(nextPageIndex);
 
     Animated.parallel([
@@ -78,7 +114,8 @@ export function KanaKeyboard({
       }),
       Animated.timing(pageOpacity, {
         toValue: 1,
-        duration: 120,
+        duration: MOTION.base,
+        easing: MOTION.easing,
         useNativeDriver: true
       })
     ]).start();
@@ -93,7 +130,6 @@ export function KanaKeyboard({
   };
 
   const handleKanaPress = (kana: string) => {
-    void Haptics.selectionAsync();
     onKanaPress(kana);
   };
 
@@ -158,16 +194,15 @@ export function KanaKeyboard({
                 const romaji = getKanaRomaji(kana);
 
                 return (
-                  <Pressable
+                  <PressScale
                     key={kana}
                     onPress={() => handleKanaPress(kana)}
                     disabled={disabled}
-                    style={({ pressed }) => [
+                    style={[
                       styles.key,
                       compact && styles.compactKey,
                       statusStyle && { backgroundColor: statusStyle.backgroundColor },
-                      disabled && styles.disabledKey,
-                      pressed && !disabled && styles.pressedKey
+                      disabled && styles.disabledKey
                     ]}
                   >
                     <Text
@@ -190,7 +225,7 @@ export function KanaKeyboard({
                         {romaji}
                       </Text>
                     ) : null}
-                  </Pressable>
+                  </PressScale>
                 );
               })}
             </View>
@@ -199,30 +234,28 @@ export function KanaKeyboard({
       </View>
 
       <View style={[styles.actionRow, compact && styles.compactActionRow]}>
-        <Pressable
+        <PressScale
           onPress={onEnter}
           disabled={disabled}
-          style={({ pressed }) => [
+          style={[
             styles.actionKey,
             compact && styles.compactActionKey,
-            disabled && styles.disabledKey,
-            pressed && !disabled && styles.pressedKey
+            disabled && styles.disabledKey
           ]}
         >
           <Text style={styles.actionText}>Enter</Text>
-        </Pressable>
-        <Pressable
+        </PressScale>
+        <PressScale
           onPress={onDelete}
           disabled={disabled}
-          style={({ pressed }) => [
+          style={[
             styles.actionKey,
             compact && styles.compactActionKey,
-            disabled && styles.disabledKey,
-            pressed && !disabled && styles.pressedKey
+            disabled && styles.disabledKey
           ]}
         >
           <Text style={styles.actionText}>Delete</Text>
-        </Pressable>
+        </PressScale>
       </View>
     </View>
   );

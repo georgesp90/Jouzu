@@ -1,7 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import { TileStatus } from "@/types/game";
 import { getKanaRomaji } from "@/utils/kanaRomaji";
+import { playFeedbackSound } from "@/utils/feedback";
+import { MOTION } from "@/utils/motion";
 
 type GameGridProps = {
   answerLength: number;
@@ -11,6 +13,8 @@ type GameGridProps = {
   results: TileStatus[][];
   showRomaji: boolean;
   shakeTrigger: number;
+  solved?: boolean;
+  reduceMotion?: boolean;
   tileSize?: number;
 };
 
@@ -24,6 +28,200 @@ const statusStyles: Record<TileStatus, { backgroundColor: string; borderColor: s
 
 const SMALL_KANA = new Set(["ぁ", "ぃ", "ぅ", "ぇ", "ぉ", "ゃ", "ゅ", "ょ", "っ", "ゎ"]);
 
+type AnimatedTileProps = {
+  kana: string;
+  status: TileStatus;
+  showRomaji: boolean;
+  tileSize: number;
+  isCurrentRow: boolean;
+  columnIndex: number;
+  rowResultKey: string;
+  shouldPlayWinWave: boolean;
+  reduceMotion: boolean;
+  activePulse: Animated.Value;
+};
+
+function AnimatedTile({
+  kana,
+  status,
+  showRomaji,
+  tileSize,
+  isCurrentRow,
+  columnIndex,
+  rowResultKey,
+  shouldPlayWinWave,
+  reduceMotion,
+  activePulse
+}: AnimatedTileProps) {
+  const popValue = useRef(new Animated.Value(1)).current;
+  const flipValue = useRef(new Animated.Value(0)).current;
+  const waveValue = useRef(new Animated.Value(0)).current;
+  const previousKanaRef = useRef(kana);
+  const previousResultKeyRef = useRef("");
+  const previousWinWaveRef = useRef(false);
+  const [revealed, setRevealed] = useState(isCurrentRow || status === "empty");
+
+  useEffect(() => {
+    if (!isCurrentRow || !kana || previousKanaRef.current === kana) {
+      previousKanaRef.current = kana;
+      return;
+    }
+
+    previousKanaRef.current = kana;
+    if (reduceMotion) {
+      return;
+    }
+
+    popValue.setValue(1);
+    Animated.sequence([
+      Animated.timing(popValue, {
+        toValue: MOTION.popScale,
+        duration: MOTION.quick,
+        easing: MOTION.easing,
+        useNativeDriver: true
+      }),
+      Animated.spring(popValue, {
+        toValue: 1,
+        damping: 14,
+        stiffness: 260,
+        mass: 0.45,
+        useNativeDriver: true
+      })
+    ]).start();
+  }, [isCurrentRow, kana, popValue, reduceMotion]);
+
+  useEffect(() => {
+    if (isCurrentRow || status === "empty") {
+      setRevealed(true);
+      flipValue.setValue(1);
+      previousResultKeyRef.current = rowResultKey;
+      return;
+    }
+
+    if (previousResultKeyRef.current === rowResultKey && revealed) {
+      return;
+    }
+
+    previousResultKeyRef.current = rowResultKey;
+    if (reduceMotion) {
+      setRevealed(true);
+      flipValue.setValue(1);
+      return;
+    }
+
+    setRevealed(false);
+    flipValue.setValue(0);
+    const revealDelay = columnIndex * MOTION.stagger;
+    const soundTimer = setTimeout(() => {
+      void playFeedbackSound("reveal");
+    }, revealDelay);
+    const revealTimer = setTimeout(() => setRevealed(true), revealDelay + MOTION.reveal / 2);
+
+    Animated.timing(flipValue, {
+      toValue: 1,
+      duration: MOTION.reveal,
+      delay: revealDelay,
+      easing: MOTION.easing,
+      useNativeDriver: true
+    }).start();
+
+    return () => {
+      clearTimeout(soundTimer);
+      clearTimeout(revealTimer);
+    };
+  }, [columnIndex, flipValue, isCurrentRow, reduceMotion, revealed, rowResultKey, status]);
+
+  useEffect(() => {
+    if (!shouldPlayWinWave || reduceMotion) {
+      previousWinWaveRef.current = false;
+      return;
+    }
+
+    if (previousWinWaveRef.current) {
+      return;
+    }
+
+    previousWinWaveRef.current = true;
+    waveValue.setValue(0);
+    // Keep the reward motion behind the reveal so it reads as a soft finish.
+    Animated.sequence([
+      Animated.delay(MOTION.reveal + 90 + columnIndex * MOTION.stagger),
+      Animated.timing(waveValue, {
+        toValue: 1,
+        duration: MOTION.base,
+        easing: MOTION.easing,
+        useNativeDriver: true
+      }),
+      Animated.spring(waveValue, {
+        toValue: 0,
+        damping: 13,
+        stiffness: 190,
+        mass: 0.45,
+        useNativeDriver: true
+      })
+    ]).start();
+  }, [columnIndex, reduceMotion, shouldPlayWinWave, waveValue]);
+
+  const displayStatus = revealed ? status : "empty";
+  const colors = statusStyles[displayStatus];
+  const romaji = kana ? getKanaRomaji(kana) : "";
+  const isSmallKana = SMALL_KANA.has(kana);
+  const flipScaleX = flipValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 0.04, 1]
+  });
+  const waveTranslateY = waveValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, MOTION.waveLift]
+  });
+  const waveScale = waveValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.03]
+  });
+  const activeOpacity = activePulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.18, 0.46]
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.tile,
+        {
+          width: tileSize,
+          height: tileSize,
+          backgroundColor: colors.backgroundColor,
+          borderColor: colors.borderColor,
+          transform: [
+            { scaleX: flipScaleX },
+            { scale: Animated.multiply(popValue, waveScale) },
+            { translateY: waveTranslateY }
+          ]
+        }
+      ]}
+    >
+      {isCurrentRow && status === "empty" ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.activeTileGlow, { opacity: reduceMotion ? 0.24 : activeOpacity }]}
+        />
+      ) : null}
+      <Text
+        style={[
+          styles.tileKana,
+          isSmallKana && styles.smallKana,
+          { color: colors.color }
+        ]}
+      >
+        {kana}
+      </Text>
+      {showRomaji && romaji ? (
+        <Text style={[styles.tileRomaji, { color: colors.color }]}>{romaji}</Text>
+      ) : null}
+    </Animated.View>
+  );
+}
+
 export function GameGrid({
   answerLength,
   maxGuesses,
@@ -32,24 +230,54 @@ export function GameGrid({
   results,
   showRomaji,
   shakeTrigger,
+  solved = false,
+  reduceMotion = false,
   tileSize = 56
 }: GameGridProps) {
   const shakeValue = useRef(new Animated.Value(0)).current;
+  const activePulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (shakeTrigger === 0) {
+    if (shakeTrigger === 0 || reduceMotion) {
       return;
     }
 
     shakeValue.setValue(0);
     Animated.sequence([
-      Animated.timing(shakeValue, { toValue: 1, duration: 45, useNativeDriver: true }),
-      Animated.timing(shakeValue, { toValue: -1, duration: 45, useNativeDriver: true }),
-      Animated.timing(shakeValue, { toValue: 1, duration: 45, useNativeDriver: true }),
-      Animated.timing(shakeValue, { toValue: -1, duration: 45, useNativeDriver: true }),
-      Animated.timing(shakeValue, { toValue: 0, duration: 45, useNativeDriver: true })
+      Animated.timing(shakeValue, { toValue: 1, duration: 44, useNativeDriver: true }),
+      Animated.timing(shakeValue, { toValue: -1, duration: 44, useNativeDriver: true }),
+      Animated.timing(shakeValue, { toValue: 1, duration: 44, useNativeDriver: true }),
+      Animated.timing(shakeValue, { toValue: -1, duration: 44, useNativeDriver: true }),
+      Animated.timing(shakeValue, { toValue: 0, duration: 44, useNativeDriver: true })
     ]).start();
-  }, [shakeTrigger, shakeValue]);
+  }, [reduceMotion, shakeTrigger, shakeValue]);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      activePulse.setValue(0);
+      return;
+    }
+
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(activePulse, {
+          toValue: 1,
+          duration: 720,
+          easing: MOTION.easing,
+          useNativeDriver: true
+        }),
+        Animated.timing(activePulse, {
+          toValue: 0,
+          duration: 720,
+          easing: MOTION.easing,
+          useNativeDriver: true
+        })
+      ])
+    );
+
+    pulse.start();
+    return () => pulse.stop();
+  }, [activePulse, reduceMotion]);
 
   const shakeStyle = {
     transform: [
@@ -73,37 +301,25 @@ export function GameGrid({
           <RowContainer key={rowIndex} style={[styles.row, isCurrentRow && shakeStyle]}>
             {Array.from({ length: answerLength }).map((__, columnIndex) => {
               const status = results[rowIndex]?.[columnIndex] ?? "empty";
-              const colors = statusStyles[status];
               const kana = rowChars[columnIndex] ?? "";
-              const romaji = kana ? getKanaRomaji(kana) : "";
-              const isSmallKana = SMALL_KANA.has(kana);
+              const rowResultKey = `${rowIndex}:${results[rowIndex]?.join("") ?? "empty"}`;
+              const shouldPlayWinWave =
+                solved && rowIndex === guesses.length - 1 && status === "correct";
 
               return (
-                <View
+                <AnimatedTile
                   key={`${rowIndex}-${columnIndex}`}
-                  style={[
-                    styles.tile,
-                    {
-                      width: tileSize,
-                      height: tileSize,
-                      backgroundColor: colors.backgroundColor,
-                      borderColor: colors.borderColor
-                    }
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tileKana,
-                      isSmallKana && styles.smallKana,
-                      { color: colors.color }
-                    ]}
-                  >
-                    {kana}
-                  </Text>
-                  {showRomaji && romaji ? (
-                    <Text style={[styles.tileRomaji, { color: colors.color }]}>{romaji}</Text>
-                  ) : null}
-                </View>
+                  kana={kana}
+                  status={status}
+                  showRomaji={showRomaji}
+                  tileSize={tileSize}
+                  isCurrentRow={isCurrentRow}
+                  columnIndex={columnIndex}
+                  rowResultKey={rowResultKey}
+                  shouldPlayWinWave={shouldPlayWinWave}
+                  reduceMotion={reduceMotion}
+                  activePulse={activePulse}
+                />
               );
             })}
           </RowContainer>
@@ -128,7 +344,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 8,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    overflow: "hidden"
+  },
+  activeTileGlow: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderColor: "#2f4f4a",
+    borderRadius: 7
   },
   tileKana: {
     fontSize: 27,

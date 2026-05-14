@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
-import { Modal, Pressable, Share, StyleSheet, Text, View } from "react-native";
-import ConfettiCannon from "react-native-confetti-cannon";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Modal, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { TileStatus, WordEntry } from "@/types/game";
+import { MOTION, useReducedMotion } from "@/utils/motion";
 import { speakJapanese, stopSpeech } from "@/utils/speech";
 
 type ResultModalProps = {
@@ -50,6 +50,76 @@ ${rows}
 2 minutes of Japanese a day`;
 }
 
+function SubtleConfetti({ onDone }: { onDone: () => void }) {
+  const progress = useRef(new Animated.Value(0)).current;
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 32 }, (_, index) => ({
+        id: index,
+        x: (index % 8) * 32 - 112,
+        y: 74 + (index % 4) * 18,
+        rotate: index % 2 === 0 ? "42deg" : "-38deg",
+        color: ["#2f4f4a", "#d7aa42", "#f7f2ea", "#6f5a8e"][index % 4]
+      })),
+    []
+  );
+
+  useEffect(() => {
+    progress.setValue(0);
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 850,
+      useNativeDriver: true
+    }).start(({ finished }) => {
+      if (finished) {
+        onDone();
+      }
+    });
+  }, [onDone, progress]);
+
+  return (
+    <View pointerEvents="none" style={styles.confettiLayer}>
+      {particles.map((particle) => {
+        const translateX = progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, particle.x]
+        });
+        const translateY = progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, particle.y]
+        });
+        const opacity = progress.interpolate({
+          inputRange: [0, 0.75, 1],
+          outputRange: [1, 1, 0]
+        });
+        const scale = progress.interpolate({
+          inputRange: [0, 0.3, 1],
+          outputRange: [0.7, 1, 0.85]
+        });
+
+        return (
+          <Animated.View
+            key={particle.id}
+            style={[
+              styles.confettiPiece,
+              {
+                backgroundColor: particle.color,
+                opacity,
+                transform: [
+                  { translateX },
+                  { translateY },
+                  { rotate: particle.rotate },
+                  { scale }
+                ]
+              }
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
 export function ResultModal({
   visible,
   word,
@@ -64,16 +134,58 @@ export function ResultModal({
   onReviewCorrect,
   onReviewIncorrect
 }: ResultModalProps) {
+  const reduceMotion = useReducedMotion();
   const canPlayPronunciation = Boolean(word.hiragana.trim());
   const confettiKeyRef = useRef("");
+  const [confettiBurstKey, setConfettiBurstKey] = useState<string | null>(null);
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const modalScale = useRef(new Animated.Value(0.97)).current;
   const perfectSolveKey = `${word.id}:${guessCount}:${results.length}`;
   const shouldShowPerfectSolve = !reviewMode && solved && isPerfectSolve;
-  const shouldFireConfetti =
-    visible && shouldShowPerfectSolve && confettiKeyRef.current !== perfectSolveKey;
 
-  if (shouldFireConfetti) {
-    confettiKeyRef.current = perfectSolveKey;
-  }
+  useEffect(() => {
+    if (
+      visible &&
+      shouldShowPerfectSolve &&
+      !reduceMotion &&
+      confettiKeyRef.current !== perfectSolveKey
+    ) {
+      confettiKeyRef.current = perfectSolveKey;
+      setConfettiBurstKey(perfectSolveKey);
+    }
+  }, [perfectSolveKey, reduceMotion, shouldShowPerfectSolve, visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      backdropOpacity.setValue(0);
+      modalScale.setValue(0.97);
+      return;
+    }
+
+    if (reduceMotion) {
+      backdropOpacity.setValue(1);
+      modalScale.setValue(1);
+      return;
+    }
+
+    backdropOpacity.setValue(0);
+    modalScale.setValue(0.97);
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: MOTION.modal,
+        easing: MOTION.easing,
+        useNativeDriver: true
+      }),
+      Animated.spring(modalScale, {
+        toValue: 1,
+        damping: 16,
+        stiffness: 220,
+        mass: 0.55,
+        useNativeDriver: true
+      })
+    ]).start();
+  }, [backdropOpacity, modalScale, reduceMotion, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -101,9 +213,9 @@ export function ResultModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.modal}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
+      <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+        <Animated.View style={[styles.modal, { transform: [{ scale: modalScale }] }]}>
           <Text style={styles.eyebrow}>
             {reviewMode ? "Review card" : solved ? "Solved" : "Today's word"}
           </Text>
@@ -176,18 +288,14 @@ export function ResultModal({
               </>
             )}
           </View>
-          {shouldFireConfetti ? (
-            <ConfettiCannon
-              count={36}
-              origin={{ x: 210, y: -12 }}
-              fallSpeed={1800}
-              fadeOut
-              autoStart
-              colors={["#2f4f4a", "#d7aa42", "#f7f2ea", "#6f5a8e"]}
+          {confettiBurstKey ? (
+            <SubtleConfetti
+              key={confettiBurstKey}
+              onDone={() => setConfettiBurstKey(null)}
             />
           ) : null}
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }
@@ -206,7 +314,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#fffdf8",
     padding: 24,
-    gap: 14
+    gap: 14,
+    overflow: "hidden"
   },
   eyebrow: {
     color: "#7b6f60",
@@ -331,5 +440,19 @@ const styles = StyleSheet.create({
     color: "#2f4f4a",
     fontSize: 16,
     fontWeight: "800"
+  },
+  confettiLayer: {
+    position: "absolute",
+    top: 48,
+    left: "50%",
+    width: 1,
+    height: 1,
+    zIndex: 4
+  },
+  confettiPiece: {
+    position: "absolute",
+    width: 7,
+    height: 10,
+    borderRadius: 2
   }
 });

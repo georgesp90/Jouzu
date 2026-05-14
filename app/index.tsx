@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -35,8 +35,10 @@ import {
 } from "@/firebase/services";
 import { DailyProgress, JLPTLevel, TileStatus, WordEntry, WordMastery } from "@/types/game";
 import { evaluateGuess } from "@/utils/evaluateGuess";
+import { playInteractionFeedback } from "@/utils/feedback";
 import { getDailyPuzzle } from "@/utils/getDailyPuzzle";
 import { getPuzzleNumber, getTodayKey } from "@/utils/getWordOfTheDay";
+import { MOTION, useReducedMotion } from "@/utils/motion";
 import {
   clearLocalJouzuData,
   loadProgress,
@@ -211,31 +213,84 @@ function selectRandomWord(
 function HintLine({
   visible,
   children,
-  style
+  style,
+  pop = false,
+  reduceMotion = false
 }: {
   visible: boolean;
   children: ReactNode;
   style: object;
+  pop?: boolean;
+  reduceMotion?: boolean;
 }) {
   const opacity = useMemo(() => new Animated.Value(visible ? 1 : 0), []);
+  const translateY = useMemo(() => new Animated.Value(visible ? 0 : 6), []);
+  const scale = useMemo(() => new Animated.Value(visible ? 1 : 0.92), []);
 
   useEffect(() => {
+    if (visible) {
+      if (reduceMotion) {
+        opacity.setValue(1);
+        translateY.setValue(0);
+        scale.setValue(1);
+        return;
+      }
+
+      opacity.setValue(0);
+      translateY.setValue(6);
+      scale.setValue(pop ? 0.82 : 1);
+
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          damping: 12,
+          stiffness: 220,
+          mass: 0.55,
+          useNativeDriver: true
+        })
+      ]).start();
+      return;
+    }
+
     Animated.timing(opacity, {
-      toValue: visible ? 1 : 0,
-      duration: 180,
+      toValue: 0,
+      duration: 120,
       useNativeDriver: true
     }).start();
-  }, [opacity, visible]);
+  }, [opacity, pop, reduceMotion, scale, translateY, visible]);
 
   if (!visible) {
     return null;
   }
 
-  return <Animated.Text style={[style, { opacity }]}>{children}</Animated.Text>;
+  return (
+    <Animated.Text
+      style={[
+        style,
+        {
+          opacity,
+          transform: [{ translateY }, { scale }]
+        }
+      ]}
+    >
+      {children}
+    </Animated.Text>
+  );
 }
 
 export default function GameScreen() {
   const { height, width } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
   const todayKey = useMemo(() => getTodayKey(), []);
   const puzzleNumber = useMemo(() => getPuzzleNumber(), []);
   const localDailyPuzzle = useMemo(() => getDailyPuzzle(), []);
@@ -281,6 +336,7 @@ export default function GameScreen() {
   const [authError, setAuthError] = useState("");
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [accountDeleting, setAccountDeleting] = useState(false);
+  const modeSlide = useRef(new Animated.Value(gameMode === "daily" ? 0 : 1)).current;
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
   const maxTileSize = maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48;
@@ -568,6 +624,21 @@ export default function GameScreen() {
   const canTapDefinitionHint = hintModeEnabled || incorrectGuessCount >= 2;
   const categoryLabel = `Category: ${word.category}`;
   const definitionText = word.refinedDefinition ?? word.definition;
+
+  useEffect(() => {
+    if (reduceMotion) {
+      modeSlide.setValue(gameMode === "daily" ? 0 : 1);
+      return;
+    }
+
+    Animated.timing(modeSlide, {
+      toValue: gameMode === "daily" ? 0 : 1,
+      duration: MOTION.base,
+      easing: MOTION.easing,
+      useNativeDriver: true
+    }).start();
+  }, [gameMode, modeSlide, reduceMotion]);
+
   const keyStatuses = useMemo(() => {
     const priority: Record<TileStatus, number> = {
       empty: 0,
@@ -759,6 +830,7 @@ export default function GameScreen() {
       return;
     }
 
+    playInteractionFeedback("kana");
     setCurrentGuess((value) => `${value}${kana}`);
   };
 
@@ -767,6 +839,9 @@ export default function GameScreen() {
       return;
     }
 
+    if (currentGuess) {
+      playInteractionFeedback("delete");
+    }
     setCurrentGuess((value) => Array.from(value).slice(0, -1).join(""));
   };
 
@@ -777,6 +852,7 @@ export default function GameScreen() {
     }
 
     const currentChars = Array.from(currentGuess);
+    playInteractionFeedback("submit");
 
     if (currentGuess && !KANA_ONLY.test(currentGuess)) {
       Alert.alert("Kana only", "Use hiragana for this puzzle.");
@@ -808,6 +884,10 @@ export default function GameScreen() {
     setSolved(nextSolved);
     setCompleted(nextCompleted);
     setCurrentGuess("");
+
+    if (nextSolved) {
+      playInteractionFeedback(nextGuesses.length === 1 ? "perfect" : "win");
+    }
 
     if (gameMode === "daily") {
       await persistProgress({
@@ -862,6 +942,10 @@ export default function GameScreen() {
   const todayStatsWord = userStats?.todayPlay
     ? wordsById.get(userStats.todayPlay.wordId)
     : null;
+  const modeIndicatorTranslateX = modeSlide.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 78]
+  });
 
   if (authLoading) {
     return (
@@ -953,9 +1037,16 @@ export default function GameScreen() {
       <View style={[styles.container, isShortScreen && styles.shortContainer]}>
         <View style={styles.topBar}>
           <View style={styles.modeControl} accessibilityLabel="Game mode">
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.modeActiveIndicator,
+                { transform: [{ translateX: modeIndicatorTranslateX }] }
+              ]}
+            />
             <Pressable
               onPress={() => handleGameModeChange("daily")}
-              style={[styles.modeSegment, gameMode === "daily" && styles.activeSegment]}
+              style={styles.modeSegment}
             >
               <Text style={[styles.modeSegmentText, gameMode === "daily" && styles.activeSegmentText]}>
                 Daily
@@ -963,7 +1054,7 @@ export default function GameScreen() {
             </Pressable>
             <Pressable
               onPress={() => handleGameModeChange("unlimited")}
-              style={[styles.modeSegment, gameMode === "unlimited" && styles.activeSegment]}
+              style={styles.modeSegment}
             >
               <Text
                 style={[styles.modeSegmentText, gameMode === "unlimited" && styles.activeSegmentText]}
@@ -1099,15 +1190,26 @@ export default function GameScreen() {
               results={results}
               showRomaji={showRomaji}
               shakeTrigger={shakeTrigger}
+              solved={solved}
+              reduceMotion={reduceMotion}
               tileSize={tileSize}
             />
 
             <View style={[styles.hintBox, isShortScreen && styles.shortHintBox]}>
               <Text style={styles.categoryText}>{categoryLabel}</Text>
-              <HintLine visible={showEmojiHint} style={styles.emojiHintText}>
+              <HintLine
+                visible={showEmojiHint}
+                style={styles.emojiHintText}
+                pop
+                reduceMotion={reduceMotion}
+              >
                 {word.hintEmoji}
               </HintLine>
-              <HintLine visible={showDefinitionTextHint} style={styles.definitionHintText}>
+              <HintLine
+                visible={showDefinitionTextHint}
+                style={styles.definitionHintText}
+                reduceMotion={reduceMotion}
+              >
                 {definitionText}
               </HintLine>
               {!completed && !showDefinitionTextHint && canTapDefinitionHint ? (
@@ -1585,14 +1687,24 @@ const styles = StyleSheet.create({
     borderColor: "#ded6ca",
     borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: "#fffdf8"
+    backgroundColor: "#fffdf8",
+    position: "relative"
+  },
+  modeActiveIndicator: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 78,
+    backgroundColor: "#2f4f4a"
   },
   modeSegment: {
-    minWidth: 64,
+    width: 78,
     height: 34,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 9
+    paddingHorizontal: 9,
+    zIndex: 1
   },
   modeSegmentText: {
     color: "#7b6f60",
