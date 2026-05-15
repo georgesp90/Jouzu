@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Modal, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { TileStatus, WordEntry } from "@/types/game";
+import { formatPuzzleNumber } from "@/utils/getWordOfTheDay";
 import { MOTION, useReducedMotion } from "@/utils/motion";
 import { speakJapanese, stopSpeech } from "@/utils/speech";
 
@@ -40,9 +41,10 @@ function buildShareText(
   results: TileStatus[][]
 ) {
   const score = solved ? `${guessCount}/${maxGuesses}` : `X/${maxGuesses}`;
+  const formattedPuzzleNumber = formatPuzzleNumber(puzzleNumber);
   const rows = results.map((row) => row.map((status) => resultEmoji[status]).join("")).join("\n");
 
-  return `Jozu Hiragana #${puzzleNumber} ${score}
+  return `Jozu Hiragana #${formattedPuzzleNumber} ${score}
 🌸 ${titleCase(word.category)}
 
 ${rows}

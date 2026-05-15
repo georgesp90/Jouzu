@@ -16,6 +16,8 @@ import { onAuthStateChanged } from "@firebase/auth";
 import { GameGrid } from "@/components/GameGrid";
 import { KanaKeyboard } from "@/components/KanaKeyboard";
 import { ResultModal } from "@/components/ResultModal";
+import { PaywallModal } from "@/components/PaywallModal";
+import { FoundingUserBadge } from "@/components/FoundingUserBadge";
 import { acceptedGuesses } from "@/data/acceptedGuesses";
 import { wordPools } from "@/data/words";
 import { auth } from "@/firebase/firebaseConfig";
@@ -27,6 +29,7 @@ import {
   getUserStats,
   hasPlayedToday,
   initUserIfNeeded,
+  migrateLegacyPlusIfEligible,
   saveDailyPlayForCurrentUser,
   sendJouzuPasswordReset,
   signInWithEmail,
@@ -37,13 +40,24 @@ import { DailyProgress, JLPTLevel, TileStatus, WordEntry, WordMastery } from "@/
 import { evaluateGuess } from "@/utils/evaluateGuess";
 import { playInteractionFeedback } from "@/utils/feedback";
 import { getDailyPuzzle } from "@/utils/getDailyPuzzle";
-import { getPuzzleNumber, getTodayKey } from "@/utils/getWordOfTheDay";
+import { formatPuzzleNumber, getPuzzleNumber, getTodayKey } from "@/utils/getWordOfTheDay";
 import { MOTION, useReducedMotion } from "@/utils/motion";
 import {
+  PlusPlan,
+  SubscriptionStatus,
+  canAccessFeature,
+  getCachedSubscriptionStatus,
+  getSubscriptionStatus,
+  purchasePlusPlan,
+  restorePlusPurchases
+} from "@/utils/subscriptionService";
+import {
   clearLocalJouzuData,
+  loadPracticeCategory,
   loadProgress,
   loadShowRomajiPreference,
   loadWordMastery,
+  savePracticeCategory,
   saveProgress,
   saveShowRomajiPreference,
   saveWordMastery
@@ -52,6 +66,20 @@ import {
 const KANA_ONLY = /^[\u3040-\u309f]+$/;
 type GameMode = "daily" | "unlimited";
 type AuthMode = "signIn" | "signUp";
+type PendingPlusAction = "practice" | "review" | null;
+type PracticeCategory = "all" | string;
+
+const PRACTICE_CATEGORY_OPTIONS = [
+  { id: "all", label: "All Categories", matches: [] },
+  { id: "verbs", label: "Verbs", matches: ["verb", "action"] },
+  { id: "food", label: "Food", matches: ["food", "drink"] },
+  { id: "travel", label: "Travel", matches: ["travel", "transport"] },
+  { id: "work", label: "Work", matches: ["work"] },
+  { id: "school", label: "School", matches: ["study"] },
+  { id: "places", label: "Places", matches: ["place", "home"] },
+  { id: "emotions", label: "Emotions", matches: ["feeling"] },
+  { id: "adjectives", label: "Adjectives", matches: ["adjective", "description", "color"] }
+] as const;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -132,6 +160,24 @@ function getReviewWords(masteryByWord: Record<string, WordMastery>): WordEntry[]
     .filter((word): word is WordEntry => Boolean(word));
 }
 
+function getPracticeCategoryOption(categoryId: PracticeCategory) {
+  return (
+    PRACTICE_CATEGORY_OPTIONS.find((category) => category.id === categoryId) ??
+    PRACTICE_CATEGORY_OPTIONS[0]
+  );
+}
+
+function filterWordsByPracticeCategory(wordsToFilter: WordEntry[], categoryId: PracticeCategory): WordEntry[] {
+  const categoryOption = getPracticeCategoryOption(categoryId);
+
+  if (categoryOption.id === "all") {
+    return wordsToFilter;
+  }
+
+  const categoryMatches = categoryOption.matches as readonly string[];
+  return wordsToFilter.filter((word) => categoryMatches.includes(word.category));
+}
+
 function getNextMastery(
   currentMastery: Record<string, WordMastery>,
   practiceWord: WordEntry,
@@ -198,12 +244,14 @@ function selectRandomWord(
   level: JLPTLevel,
   excludedWordIds: string[] = [],
   masteryByWord: Record<string, WordMastery> = {},
-  reviewWeakOnly = false
+  reviewWeakOnly = false,
+  practiceCategory: PracticeCategory = "all"
 ): WordEntry {
   const pool = wordPools[level].length > 0 ? wordPools[level] : wordPools.N5;
   const excludedIds = new Set(excludedWordIds);
   const levelPool = reviewWeakOnly ? getReviewWords(masteryByWord) : pool;
-  const fallbackPool = levelPool.length > 0 ? levelPool : pool;
+  const filteredPool = filterWordsByPracticeCategory(levelPool, practiceCategory);
+  const fallbackPool = filteredPool.length > 0 ? filteredPool : levelPool.length > 0 ? levelPool : pool;
   const availableWords = fallbackPool.filter((word) => !excludedIds.has(word.id));
   const candidatePool = availableWords.length > 0 ? availableWords : fallbackPool;
 
@@ -293,11 +341,13 @@ export default function GameScreen() {
   const reduceMotion = useReducedMotion();
   const todayKey = useMemo(() => getTodayKey(), []);
   const puzzleNumber = useMemo(() => getPuzzleNumber(), []);
+  const formattedPuzzleNumber = useMemo(() => formatPuzzleNumber(puzzleNumber), [puzzleNumber]);
   const localDailyPuzzle = useMemo(() => getDailyPuzzle(), []);
   const [dailyPuzzle, setDailyPuzzle] = useState(localDailyPuzzle);
   const [gameMode, setGameMode] = useState<GameMode>("daily");
   const [selectedJLPTLevel, setSelectedJLPTLevel] = useState<JLPTLevel>("N5");
   const [unlimitedWord, setUnlimitedWord] = useState(() => selectRandomWord("N5"));
+  const [selectedPracticeCategory, setSelectedPracticeCategory] = useState<PracticeCategory>("all");
   const [masteryByWord, setMasteryByWord] = useState<Record<string, WordMastery>>({});
   const [reviewWeakOnly, setReviewWeakOnly] = useState(false);
   const [seenPracticeWordIds, setSeenPracticeWordIds] = useState<Record<JLPTLevel, string[]>>({
@@ -336,6 +386,12 @@ export default function GameScreen() {
   const [authError, setAuthError] = useState("");
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [accountDeleting, setAccountDeleting] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [subscriptionBusy, setSubscriptionBusy] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [paywallError, setPaywallError] = useState<string | null>(null);
+  const [pendingPlusAction, setPendingPlusAction] = useState<PendingPlusAction>(null);
+  const [showFoundingUserModal, setShowFoundingUserModal] = useState(false);
   const modeSlide = useRef(new Animated.Value(gameMode === "daily" ? 0 : 1)).current;
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
@@ -396,12 +452,15 @@ export default function GameScreen() {
     level: JLPTLevel,
     currentWordId?: string,
     nextReviewWeakOnly = reviewWeakOnly,
-    nextMasteryByWord = masteryByWord
+    nextMasteryByWord = masteryByWord,
+    nextPracticeCategory: PracticeCategory = activePracticeCategory
   ) => {
     setSeenPracticeWordIds((seenIdsByLevel) => {
       const pool = wordPools[level].length > 0 ? wordPools[level] : wordPools.N5;
       const eligiblePool = nextReviewWeakOnly ? getReviewWords(nextMasteryByWord) : pool;
-      const candidateCyclePool = eligiblePool.length > 0 ? eligiblePool : pool;
+      const filteredEligiblePool = filterWordsByPracticeCategory(eligiblePool, nextPracticeCategory);
+      const candidateCyclePool =
+        filteredEligiblePool.length > 0 ? filteredEligiblePool : eligiblePool.length > 0 ? eligiblePool : pool;
       const poolIds = new Set(candidateCyclePool.map((entry) => entry.id));
       const seenIds = seenIdsByLevel[level].filter((id) => poolIds.has(id));
       const cycleIsComplete = seenIds.length >= candidateCyclePool.length;
@@ -414,7 +473,8 @@ export default function GameScreen() {
         level,
         excludedWordIds,
         nextMasteryByWord,
-        nextReviewWeakOnly
+        nextReviewWeakOnly,
+        nextPracticeCategory
       );
 
       setUnlimitedWord(nextWord);
@@ -478,10 +538,11 @@ export default function GameScreen() {
     async function restoreProgress() {
       try {
         const uid = firebaseUid ?? (await getSignedInUserId());
-        const [saved, savedShowRomaji, savedMastery] = await Promise.all([
+        const [saved, savedShowRomaji, savedMastery, savedPracticeCategory] = await Promise.all([
           loadProgress(uid),
           loadShowRomajiPreference(),
-          loadWordMastery(uid)
+          loadWordMastery(uid),
+          loadPracticeCategory(uid)
         ]);
         if (!mounted) {
           return;
@@ -489,6 +550,9 @@ export default function GameScreen() {
 
         if (savedShowRomaji !== null) {
           setShowRomaji(savedShowRomaji);
+        }
+        if (savedPracticeCategory) {
+          setSelectedPracticeCategory(savedPracticeCategory);
         }
         setMasteryByWord(savedMastery);
 
@@ -527,9 +591,101 @@ export default function GameScreen() {
     };
   }, [authLoading, firebaseUid, localDailyPuzzle, todayKey]);
 
+  useEffect(() => {
+    if (!firebaseUid) {
+      setSubscriptionStatus(null);
+      return;
+    }
+
+    let mounted = true;
+
+    async function loadSubscriptionAccess(uid: string) {
+      const cachedStatus = await getCachedSubscriptionStatus();
+
+      if (mounted && cachedStatus) {
+        setSubscriptionStatus(cachedStatus);
+      }
+
+      const entitlements = await migrateLegacyPlusIfEligible(uid);
+      const status = await getSubscriptionStatus(uid, entitlements.legacyPlus === true);
+
+      if (mounted) {
+        setSubscriptionStatus(status);
+        setPaywallError(status.error);
+      }
+    }
+
+    void loadSubscriptionAccess(firebaseUid);
+
+    return () => {
+      mounted = false;
+    };
+  }, [firebaseUid]);
+
   const startUnlimitedWord = (level = selectedJLPTLevel, preserveMasteryFeedback = false) => {
     resetBoard(preserveMasteryFeedback);
     advancePracticeWord(level, unlimitedWord.id);
+  };
+
+  const openPlusPaywall = (action: PendingPlusAction, message?: string | null) => {
+    setPendingPlusAction(action);
+    setPaywallError(message ?? subscriptionStatus?.error ?? null);
+    setShowPaywall(true);
+  };
+
+  const completePendingPlusAction = (action: PendingPlusAction) => {
+    if (action === "practice") {
+      setGameMode("unlimited");
+      setReviewWeakOnly(false);
+      resetBoard();
+      advancePracticeWord(selectedJLPTLevel, unlimitedWord.id);
+      return;
+    }
+
+    if (action === "review") {
+      setGameMode("unlimited");
+      setReviewWeakOnly(true);
+      resetBoard();
+      advancePracticeWord(selectedJLPTLevel, unlimitedWord.id, true);
+    }
+  };
+
+  const handlePlusPurchase = async (plan: PlusPlan) => {
+    setSubscriptionBusy(true);
+    setPaywallError(null);
+
+    const result = await purchasePlusPlan(plan, firebaseUid, legacyPlus);
+
+    setSubscriptionBusy(false);
+
+    if (result.status === "success") {
+      setSubscriptionStatus(result.subscriptionStatus);
+      setShowPaywall(false);
+      completePendingPlusAction(pendingPlusAction);
+      setPendingPlusAction(null);
+      return;
+    }
+
+    if (result.status !== "cancelled") {
+      setPaywallError(result.message);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    setSubscriptionBusy(true);
+    setPaywallError(null);
+
+    const result = await restorePlusPurchases(firebaseUid, legacyPlus);
+
+    setSubscriptionBusy(false);
+
+    if (result.status === "success") {
+      setSubscriptionStatus(result.subscriptionStatus);
+      setPaywallError("Jozu Plus restored.");
+      return;
+    }
+
+    setPaywallError(result.message);
   };
 
   const skipUnlimitedWord = () => {
@@ -542,6 +698,11 @@ export default function GameScreen() {
   };
 
   const handleGameModeChange = (nextGameMode: GameMode) => {
+    if (nextGameMode === "unlimited" && !canAccessPlus) {
+      openPlusPaywall("practice");
+      return;
+    }
+
     setGameMode(nextGameMode);
     resetBoard();
 
@@ -573,7 +734,19 @@ export default function GameScreen() {
     advancePracticeWord(nextLevel, unlimitedWord.id);
   };
 
+  const handlePracticeCategoryChange = (nextCategory: PracticeCategory) => {
+    setSelectedPracticeCategory(nextCategory);
+    void savePracticeCategory(nextCategory, firebaseUid);
+    resetBoard();
+    advancePracticeWord(selectedJLPTLevel, unlimitedWord.id, reviewWeakOnly, masteryByWord, nextCategory);
+  };
+
   const handleReviewWeakWordsToggle = () => {
+    if (!canAccessPlus) {
+      openPlusPaywall("review");
+      return;
+    }
+
     const nextReviewWeakOnly = !reviewWeakOnly;
     setReviewWeakOnly(nextReviewWeakOnly);
     resetBoard();
@@ -622,8 +795,30 @@ export default function GameScreen() {
   const showDefinitionTextHint =
     !solved && (showDefinitionHint || incorrectGuessCount >= (word.hintEmoji ? 3 : 2));
   const canTapDefinitionHint = hintModeEnabled || incorrectGuessCount >= 2;
+  const showHintButton = !completed && !showDefinitionTextHint && canTapDefinitionHint;
   const categoryLabel = `Category: ${word.category}`;
   const definitionText = word.refinedDefinition ?? word.definition;
+  const isPoliteVerbForm = word.hiragana.endsWith("ます") || word.hiragana.endsWith("ません");
+  const canAccessPlus = subscriptionStatus?.canAccessPlus === true;
+  const legacyPlus = subscriptionStatus?.legacyPlus === true;
+  const canUsePracticeCategories = canAccessFeature(subscriptionStatus, "practiceCategories");
+  const activePracticeCategory = canUsePracticeCategories ? selectedPracticeCategory : "all";
+  const activePracticeCategoryLabel = getPracticeCategoryOption(activePracticeCategory).label;
+  const monthlyPlan = subscriptionStatus?.monthlyPlan ?? {
+    id: "monthly" as const,
+    title: "Monthly",
+    productIdentifier: "com.georgesp9.jozu.monthly",
+    priceLabel: "$2.99",
+    periodLabel: "per month"
+  };
+  const yearlyPlan = subscriptionStatus?.yearlyPlan ?? {
+    id: "yearly" as const,
+    title: "Yearly",
+    productIdentifier: "com.georgesp9.jozu.yearly",
+    priceLabel: "$9.99",
+    periodLabel: "per year",
+    isBestValue: true
+  };
 
   useEffect(() => {
     if (reduceMotion) {
@@ -1064,6 +1259,12 @@ export default function GameScreen() {
             </Pressable>
           </View>
           <View style={styles.iconCluster}>
+            <FoundingUserBadge
+              visible={legacyPlus}
+              modalVisible={showFoundingUserModal}
+              onPress={() => setShowFoundingUserModal(true)}
+              onClose={() => setShowFoundingUserModal(false)}
+            />
             {gameMode === "daily" ? (
               <Pressable
                 onPress={openStats}
@@ -1122,29 +1323,17 @@ export default function GameScreen() {
           </Text>
           <Text style={styles.kicker}>
             {gameMode === "daily"
-              ? `Daily Hiragana Puzzle #${puzzleNumber} · ${dailyPuzzle.jlptLevel}`
+              ? `Daily Hiragana Puzzle #${formattedPuzzleNumber} · ${dailyPuzzle.jlptLevel}`
               : reviewWeakOnly
                 ? hasReviewWords
-                  ? `Missed words · ${reviewWords.length}`
+                  ? `${activePracticeCategoryLabel} · ${reviewWords.length}`
                   : "No missed words yet"
-                : `Current word · ${word.jlpt}`}
+                : `${activePracticeCategoryLabel} · ${word.jlpt}`}
           </Text>
         </View>
 
         {gameMode === "unlimited" ? (
           <View style={styles.practicePanel}>
-            {!isReviewFlashcardMode ? (
-              <View style={styles.practiceActions}>
-                {completed ? (
-                  <Pressable onPress={() => startUnlimitedWord()} style={styles.newWordButton}>
-                    <Text style={styles.newWordButtonText}>New Word</Text>
-                  </Pressable>
-                ) : null}
-                <Pressable onPress={skipUnlimitedWord} style={styles.skipButton}>
-                  <Text style={styles.skipButtonText}>Skip</Text>
-                </Pressable>
-              </View>
-            ) : null}
             <Text style={styles.practiceStats}>
               Solved {wordsSolved} · Accuracy{" "}
               {wordsAttempted > 0
@@ -1197,6 +1386,9 @@ export default function GameScreen() {
 
             <View style={[styles.hintBox, isShortScreen && styles.shortHintBox]}>
               <Text style={styles.categoryText}>{categoryLabel}</Text>
+              {isPoliteVerbForm && !completed ? (
+                <Text style={styles.formHintText}>Polite form</Text>
+              ) : null}
               <HintLine
                 visible={showEmojiHint}
                 style={styles.emojiHintText}
@@ -1212,10 +1404,19 @@ export default function GameScreen() {
               >
                 {definitionText}
               </HintLine>
-              {!completed && !showDefinitionTextHint && canTapDefinitionHint ? (
-                <Pressable onPress={() => setShowDefinitionHint(true)} style={styles.hintButton}>
-                  <Text style={styles.hintButtonText}>Hint</Text>
-                </Pressable>
+              {showHintButton || gameMode === "unlimited" ? (
+                <View style={styles.hintActions}>
+                  {showHintButton ? (
+                    <Pressable onPress={() => setShowDefinitionHint(true)} style={styles.hintButton}>
+                      <Text style={styles.hintButtonText}>Hint</Text>
+                    </Pressable>
+                  ) : null}
+                  {gameMode === "unlimited" ? (
+                    <Pressable onPress={skipUnlimitedWord} style={styles.hintButton}>
+                      <Text style={styles.hintButtonText}>New Word</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               ) : null}
               {completed ? (
                 <Text style={styles.hintText}>
@@ -1250,6 +1451,20 @@ export default function GameScreen() {
         reviewMode={isReviewFlashcardMode}
         onReviewCorrect={() => completeReviewCard("correct")}
         onReviewIncorrect={() => completeReviewCard("incorrect")}
+      />
+
+      <PaywallModal
+        visible={showPaywall}
+        monthlyPlan={monthlyPlan}
+        yearlyPlan={yearlyPlan}
+        loading={subscriptionBusy}
+        error={paywallError}
+        onClose={() => {
+          setShowPaywall(false);
+          setPendingPlusAction(null);
+        }}
+        onPurchase={handlePlusPurchase}
+        onRestore={handleRestorePurchases}
       />
 
       <Modal
@@ -1417,6 +1632,28 @@ export default function GameScreen() {
             </View>
             {gameMode === "unlimited" ? (
               <>
+                <Text style={styles.settingsLabel}>Category</Text>
+                <View style={styles.categorySelector} accessibilityLabel="Practice category">
+                  {PRACTICE_CATEGORY_OPTIONS.map((category) => (
+                    <Pressable
+                      key={category.id}
+                      onPress={() => handlePracticeCategoryChange(category.id)}
+                      style={[
+                        styles.categoryButton,
+                        activePracticeCategory === category.id && styles.activeCategoryButton
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryButtonText,
+                          activePracticeCategory === category.id && styles.activeCategoryButtonText
+                        ]}
+                      >
+                        {category.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
                 <Text style={styles.settingsLabel}>Practice Level</Text>
                 <View style={styles.levelSelector} accessibilityLabel="JLPT level">
                   {(["N5", "N4", "N3"] as JLPTLevel[]).map((level) => (
@@ -1750,6 +1987,33 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8
   },
+  categorySelector: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7
+  },
+  categoryButton: {
+    minHeight: 30,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    backgroundColor: "#fffdf8"
+  },
+  activeCategoryButton: {
+    borderColor: "#2f4f4a",
+    backgroundColor: "#e9f0eb"
+  },
+  categoryButtonText: {
+    color: "#5d5448",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  activeCategoryButtonText: {
+    color: "#2f4f4a"
+  },
   levelButton: {
     minWidth: 56,
     height: 30,
@@ -1768,41 +2032,6 @@ const styles = StyleSheet.create({
   },
   activeLevelButtonText: {
     color: "#ffffff"
-  },
-  practiceActions: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8
-  },
-  newWordButton: {
-    minWidth: 112,
-    height: 32,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#cbbfad",
-    backgroundColor: "#fffdf8"
-  },
-  newWordButtonText: {
-    color: "#2f4f4a",
-    fontSize: 14,
-    fontWeight: "900"
-  },
-  skipButton: {
-    minWidth: 76,
-    height: 32,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#cbbfad",
-    backgroundColor: "#fffdf8"
-  },
-  skipButtonText: {
-    color: "#2f4f4a",
-    fontSize: 14,
-    fontWeight: "900"
   },
   practiceStats: {
     color: "#817565",
@@ -1871,6 +2100,13 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 15
   },
+  formHintText: {
+    color: "#2f4f4a",
+    fontSize: 11,
+    fontWeight: "900",
+    lineHeight: 14,
+    textTransform: "uppercase"
+  },
   hintText: {
     color: "#5d5448",
     fontSize: 14,
@@ -1888,19 +2124,27 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: "center"
   },
+  hintActions: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 2
+  },
   hintButton: {
-    minWidth: 62,
-    height: 24,
+    minWidth: 108,
+    height: 34,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "#cbbfad",
-    backgroundColor: "#fffdf8"
+    backgroundColor: "#fffdf8",
+    paddingHorizontal: 14
   },
   hintButtonText: {
     color: "#2f4f4a",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "900"
   },
   statsBackdrop: {

@@ -4,6 +4,7 @@ import { DailyProgress, WordMastery } from "@/types/game";
 const STORAGE_KEY = "jozu_daily_progress";
 const ROMAJI_STORAGE_KEY = "jozu_show_romaji";
 const WORD_MASTERY_STORAGE_KEY = "jozu_word_mastery";
+const PRACTICE_CATEGORY_STORAGE_KEY = "jozu_practice_category";
 
 function userScopedKey(key: string, uid?: string | null): string {
   return uid ? `${key}:${uid}` : key;
@@ -44,11 +45,23 @@ export async function saveWordMastery(
   await AsyncStorage.setItem(userScopedKey(WORD_MASTERY_STORAGE_KEY, uid), JSON.stringify(masteryByWord));
 }
 
+export async function loadPracticeCategory(uid?: string | null): Promise<string | null> {
+  return AsyncStorage.getItem(userScopedKey(PRACTICE_CATEGORY_STORAGE_KEY, uid));
+}
+
+export async function savePracticeCategory(category: string, uid?: string | null): Promise<void> {
+  await AsyncStorage.setItem(userScopedKey(PRACTICE_CATEGORY_STORAGE_KEY, uid), category);
+}
+
 export async function clearLocalJouzuData(uid?: string | null): Promise<void> {
-  const keys = [STORAGE_KEY, ROMAJI_STORAGE_KEY, WORD_MASTERY_STORAGE_KEY];
+  const keys = [STORAGE_KEY, ROMAJI_STORAGE_KEY, WORD_MASTERY_STORAGE_KEY, PRACTICE_CATEGORY_STORAGE_KEY];
 
   if (uid) {
-    keys.push(userScopedKey(STORAGE_KEY, uid), userScopedKey(WORD_MASTERY_STORAGE_KEY, uid));
+    keys.push(
+      userScopedKey(STORAGE_KEY, uid),
+      userScopedKey(WORD_MASTERY_STORAGE_KEY, uid),
+      userScopedKey(PRACTICE_CATEGORY_STORAGE_KEY, uid)
+    );
   }
 
   await AsyncStorage.multiRemove(keys);

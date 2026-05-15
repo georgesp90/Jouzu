@@ -1,6 +1,7 @@
 import { WordEntry } from "@/types/game";
 
-const START_DATE = "2026-01-01";
+const WORD_SELECTION_START_DATE = "2026-01-01";
+const PUZZLE_NUMBER_START_DATE = "2026-05-14";
 const MS_PER_DAY = 86400000;
 const DAILY_TIME_ZONE = "America/New_York";
 
@@ -20,9 +21,9 @@ function getDatePartsInDailyTimeZone(date: Date): { year: number; month: number;
   };
 }
 
-function getDayIndex(dateKey: string): number {
+function getDayIndex(dateKey: string, startDate = WORD_SELECTION_START_DATE): number {
   const [year, month, day] = dateKey.split("-").map(Number);
-  const [startYear, startMonth, startDay] = START_DATE.split("-").map(Number);
+  const [startYear, startMonth, startDay] = startDate.split("-").map(Number);
   const startUtc = Date.UTC(startYear, startMonth - 1, startDay);
   const dateUtc = Date.UTC(year, month - 1, day);
 
@@ -36,7 +37,11 @@ export function getTodayKey(date = new Date()): string {
 }
 
 export function getPuzzleNumber(date = new Date()): number {
-  return getDayIndex(getTodayKey(date)) + 1;
+  return Math.max(0, getDayIndex(getTodayKey(date), PUZZLE_NUMBER_START_DATE)) + 1;
+}
+
+export function formatPuzzleNumber(puzzleNumber: number): string {
+  return String(puzzleNumber).padStart(3, "0");
 }
 
 export function getWordOfTheDay(words: WordEntry[], date = new Date()): WordEntry {

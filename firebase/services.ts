@@ -20,6 +20,14 @@ import { wordPools } from "@/data/words";
 import { auth, db, isFirebaseConfigured } from "@/firebase/firebaseConfig";
 import { DailyPuzzle, JLPTLevel, WordEntry } from "@/types/game";
 
+export const PAYWALL_LAUNCH_DATE = "2026-05-14T00:00:00.000Z";
+
+export type UserEntitlements = {
+  legacyPlus?: boolean;
+  legacyReason?: string;
+  legacyGrantedAt?: Date | null;
+};
+
 export type StoredDailyPuzzle = {
   date: string;
   wordId: string;
@@ -53,6 +61,8 @@ type UserStatsDoc = {
   currentStreak?: unknown;
   bestStreak?: unknown;
   lastPlayedDate?: unknown;
+  createdAt?: unknown;
+  entitlements?: unknown;
 };
 
 type DailyPlayDoc = {
@@ -87,6 +97,20 @@ function stringOrNull(value: unknown): string | null {
 
 function timestampToDate(value: unknown): Date | null {
   return value instanceof Timestamp ? value.toDate() : null;
+}
+
+function entitlementsFromSnapshot(data: UserStatsDoc): UserEntitlements {
+  const rawEntitlements =
+    typeof data.entitlements === "object" && data.entitlements !== null
+      ? (data.entitlements as Record<string, unknown>)
+      : {};
+
+  return {
+    legacyPlus: rawEntitlements.legacyPlus === true,
+    legacyReason:
+      typeof rawEntitlements.legacyReason === "string" ? rawEntitlements.legacyReason : undefined,
+    legacyGrantedAt: timestampToDate(rawEntitlements.legacyGrantedAt)
+  };
 }
 
 function playFromSnapshot(date: string, data: DailyPlayDoc): DailyPlay {
@@ -231,6 +255,66 @@ export async function initUserIfNeeded(uid: string, email?: string | null): Prom
     }
   } catch (error) {
     console.warn("Firebase user initialization failed.", error);
+  }
+}
+
+export async function getUserEntitlements(uid: string): Promise<UserEntitlements> {
+  try {
+    const userSnapshot = await getDoc(doc(db, "users", uid));
+
+    if (!userSnapshot.exists()) {
+      return {};
+    }
+
+    return entitlementsFromSnapshot(userSnapshot.data() as UserStatsDoc);
+  } catch (error) {
+    console.warn("Firebase user entitlement load failed.", error);
+    return {};
+  }
+}
+
+export async function migrateLegacyPlusIfEligible(uid: string): Promise<UserEntitlements> {
+  try {
+    const userRef = doc(db, "users", uid);
+    const userSnapshot = await getDoc(userRef);
+
+    if (!userSnapshot.exists()) {
+      return {};
+    }
+
+    const userData = userSnapshot.data() as UserStatsDoc;
+    const currentEntitlements = entitlementsFromSnapshot(userData);
+
+    if (currentEntitlements.legacyPlus) {
+      return currentEntitlements;
+    }
+
+    const createdAt = timestampToDate(userData.createdAt);
+
+    if (!createdAt || createdAt.getTime() >= new Date(PAYWALL_LAUNCH_DATE).getTime()) {
+      return currentEntitlements;
+    }
+
+    await setDoc(
+      userRef,
+      {
+        entitlements: {
+          legacyPlus: true,
+          legacyReason: "early_adopter",
+          legacyGrantedAt: serverTimestamp()
+        }
+      },
+      { merge: true }
+    );
+
+    return {
+      legacyPlus: true,
+      legacyReason: "early_adopter",
+      legacyGrantedAt: new Date()
+    };
+  } catch (error) {
+    console.warn("Firebase legacy entitlement migration failed.", error);
+    return {};
   }
 }
 
