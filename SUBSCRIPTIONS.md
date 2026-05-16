@@ -44,7 +44,7 @@ Use App Store Connect sandbox testers or TestFlight:
 Users created before:
 
 ```txt
-2026-05-14T00:00:00.000Z
+2026-06-01T04:00:00.000Z
 ```
 
 are migrated once to:

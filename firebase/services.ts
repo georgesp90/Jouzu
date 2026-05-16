@@ -20,7 +20,7 @@ import { wordPools } from "@/data/words";
 import { auth, db, isFirebaseConfigured } from "@/firebase/firebaseConfig";
 import { DailyPuzzle, JLPTLevel, WordEntry } from "@/types/game";
 
-export const PAYWALL_LAUNCH_DATE = "2026-05-14T00:00:00.000Z";
+export const PAYWALL_LAUNCH_DATE = "2026-06-01T04:00:00.000Z";
 
 export type UserEntitlements = {
   legacyPlus?: boolean;

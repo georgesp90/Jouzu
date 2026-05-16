@@ -36,6 +36,12 @@ import {
   signOutOfJouzu,
   signUpWithEmail
 } from "@/firebase/services";
+import {
+  buildNotificationStatsFromProgress,
+  cancelDailyJozuNotifications,
+  requestJozuNotificationPermission,
+  rescheduleJozuNotifications
+} from "@/notifications/jozuNotifications";
 import { DailyProgress, JLPTLevel, TileStatus, WordEntry, WordMastery } from "@/types/game";
 import { evaluateGuess } from "@/utils/evaluateGuess";
 import { playInteractionFeedback } from "@/utils/feedback";
@@ -53,10 +59,12 @@ import {
 } from "@/utils/subscriptionService";
 import {
   clearLocalJouzuData,
+  loadDailyRemindersEnabled,
   loadPracticeCategory,
   loadProgress,
   loadShowRomajiPreference,
   loadWordMastery,
+  saveDailyRemindersEnabled,
   savePracticeCategory,
   saveProgress,
   saveShowRomajiPreference,
@@ -392,6 +400,9 @@ export default function GameScreen() {
   const [paywallError, setPaywallError] = useState<string | null>(null);
   const [pendingPlusAction, setPendingPlusAction] = useState<PendingPlusAction>(null);
   const [showFoundingUserModal, setShowFoundingUserModal] = useState(false);
+  const [dailyRemindersEnabled, setDailyRemindersEnabled] = useState(false);
+  const [notificationBusy, setNotificationBusy] = useState(false);
+  const [notificationPromptEligible, setNotificationPromptEligible] = useState(false);
   const modeSlide = useRef(new Animated.Value(gameMode === "daily" ? 0 : 1)).current;
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
@@ -538,11 +549,18 @@ export default function GameScreen() {
     async function restoreProgress() {
       try {
         const uid = firebaseUid ?? (await getSignedInUserId());
-        const [saved, savedShowRomaji, savedMastery, savedPracticeCategory] = await Promise.all([
+        const [
+          saved,
+          savedShowRomaji,
+          savedMastery,
+          savedPracticeCategory,
+          savedDailyRemindersEnabled
+        ] = await Promise.all([
           loadProgress(uid),
           loadShowRomajiPreference(),
           loadWordMastery(uid),
-          loadPracticeCategory(uid)
+          loadPracticeCategory(uid),
+          loadDailyRemindersEnabled()
         ]);
         if (!mounted) {
           return;
@@ -554,6 +572,7 @@ export default function GameScreen() {
         if (savedPracticeCategory) {
           setSelectedPracticeCategory(savedPracticeCategory);
         }
+        setDailyRemindersEnabled(savedDailyRemindersEnabled);
         setMasteryByWord(savedMastery);
 
         const syncedDailyPuzzle = uid
@@ -573,9 +592,21 @@ export default function GameScreen() {
           setSolved(saved.solved);
           setCompleted(saved.completed);
           setShowResult(saved.completed);
+          setNotificationPromptEligible(saved.completed);
+          if (savedDailyRemindersEnabled) {
+            void rescheduleJozuNotifications(
+              buildNotificationStatsFromProgress({ completedToday: saved.completed })
+            );
+          }
         } else if (uid && (await hasPlayedToday(uid, todayKey))) {
           setCompleted(true);
           setShowResult(true);
+          setNotificationPromptEligible(true);
+          if (savedDailyRemindersEnabled) {
+            void rescheduleJozuNotifications(buildNotificationStatsFromProgress({ completedToday: true }));
+          }
+        } else if (savedDailyRemindersEnabled) {
+          void rescheduleJozuNotifications(buildNotificationStatsFromProgress({ completedToday: false }));
         }
       } finally {
         if (mounted) {
@@ -867,6 +898,21 @@ export default function GameScreen() {
     void saveShowRomajiPreference(nextShowRomaji);
   };
 
+  const getNotificationStats = useCallback(
+    (nextStats = userStats, completedOverride = completed) =>
+      buildNotificationStatsFromProgress({
+        currentStreak: nextStats?.currentStreak ?? 0,
+        bestStreak: nextStats?.bestStreak ?? 0,
+        gamesPlayed: nextStats?.totalDailyPlays ?? 0,
+        wins: nextStats?.totalWins ?? 0,
+        winRate: nextStats?.winRate ?? 0,
+        averageGuesses: nextStats?.averageGuesses ?? 0,
+        lastPlayedDate: nextStats?.lastPlayedDate ?? null,
+        completedToday: completedOverride || Boolean(nextStats?.todayPlay)
+      }),
+    [completed, userStats]
+  );
+
   const loadStats = useCallback(async () => {
     if (!firebaseUid) {
       return;
@@ -878,16 +924,62 @@ export default function GameScreen() {
     try {
       const nextStats = await getUserStats(firebaseUid, todayKey);
       setUserStats(nextStats);
+      if (dailyRemindersEnabled) {
+        void rescheduleJozuNotifications(getNotificationStats(nextStats));
+      }
     } catch {
       setStatsError("Could not load your Jouzu history right now.");
     } finally {
       setStatsLoading(false);
     }
-  }, [firebaseUid, todayKey]);
+  }, [dailyRemindersEnabled, firebaseUid, getNotificationStats, todayKey]);
 
   const openStats = () => {
+    setNotificationPromptEligible(true);
     setShowStats(true);
     void loadStats();
+  };
+
+  const handleDailyReminderToggle = async (nextEnabled: boolean) => {
+    setNotificationBusy(true);
+
+    try {
+      if (!nextEnabled) {
+        setDailyRemindersEnabled(false);
+        await saveDailyRemindersEnabled(false);
+        await cancelDailyJozuNotifications();
+        return;
+      }
+
+      if (!notificationPromptEligible) {
+        Alert.alert(
+          "Daily reminders",
+          "Open your Daily results or complete a Daily puzzle first, then turn reminders on."
+        );
+        return;
+      }
+
+      const granted = await requestJozuNotificationPermission();
+
+      if (!granted) {
+        setDailyRemindersEnabled(false);
+        await saveDailyRemindersEnabled(false);
+        Alert.alert(
+          "Notifications are off",
+          "You can enable Jozu reminders later from iOS Settings."
+        );
+        return;
+      }
+
+      setDailyRemindersEnabled(true);
+      await saveDailyRemindersEnabled(true);
+      await rescheduleJozuNotifications(getNotificationStats());
+    } catch (error) {
+      console.warn("Daily reminder preference update failed.", error);
+      Alert.alert("Could not update reminders", "Please try again in a moment.");
+    } finally {
+      setNotificationBusy(false);
+    }
   };
 
   const handleAuthSubmit = async () => {
@@ -1093,6 +1185,7 @@ export default function GameScreen() {
       });
 
       if (nextCompleted) {
+        setNotificationPromptEligible(true);
         recordPracticeResult(word, nextSolved ? "correct" : "incorrect");
         void saveDailyPlayForCurrentUser({
           date: todayKey,
@@ -1101,6 +1194,9 @@ export default function GameScreen() {
           guessesUsed: nextGuesses.length,
           hintUsed: showDefinitionHint || incorrectGuessCount >= 2
         }).then(() => {
+          if (dailyRemindersEnabled) {
+            void rescheduleJozuNotifications(getNotificationStats(userStats, true));
+          }
           if (showStats) {
             void loadStats();
           }
@@ -1630,6 +1726,47 @@ export default function GameScreen() {
                 </Text>
               </Pressable>
             </View>
+            <Text style={styles.settingsLabel}>Daily Reminders</Text>
+            <View
+              style={[styles.segmentedControl, styles.settingsSegmentedControl]}
+              accessibilityLabel="Daily reminders"
+            >
+              <Pressable
+                onPress={() => void handleDailyReminderToggle(false)}
+                disabled={notificationBusy}
+                style={[
+                  styles.segment,
+                  styles.settingsSegment,
+                  !dailyRemindersEnabled && styles.activeSegment,
+                  notificationBusy && styles.disabledSegment
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.segmentText,
+                    !dailyRemindersEnabled && styles.activeSegmentText
+                  ]}
+                >
+                  Off
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => void handleDailyReminderToggle(true)}
+                disabled={notificationBusy}
+                style={[
+                  styles.segment,
+                  styles.settingsSegment,
+                  dailyRemindersEnabled && styles.activeSegment,
+                  notificationBusy && styles.disabledSegment
+                ]}
+              >
+                <Text
+                  style={[styles.segmentText, dailyRemindersEnabled && styles.activeSegmentText]}
+                >
+                  On
+                </Text>
+              </Pressable>
+            </View>
             {gameMode === "unlimited" ? (
               <>
                 <Text style={styles.settingsLabel}>Category</Text>
@@ -1909,6 +2046,9 @@ const styles = StyleSheet.create({
   },
   activeSegment: {
     backgroundColor: "#2f4f4a"
+  },
+  disabledSegment: {
+    opacity: 0.55
   },
   segmentText: {
     color: "#7b6f60",

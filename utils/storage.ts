@@ -5,6 +5,7 @@ const STORAGE_KEY = "jozu_daily_progress";
 const ROMAJI_STORAGE_KEY = "jozu_show_romaji";
 const WORD_MASTERY_STORAGE_KEY = "jozu_word_mastery";
 const PRACTICE_CATEGORY_STORAGE_KEY = "jozu_practice_category";
+const DAILY_REMINDERS_STORAGE_KEY = "jozu_daily_reminders_enabled";
 
 function userScopedKey(key: string, uid?: string | null): string {
   return uid ? `${key}:${uid}` : key;
@@ -53,8 +54,22 @@ export async function savePracticeCategory(category: string, uid?: string | null
   await AsyncStorage.setItem(userScopedKey(PRACTICE_CATEGORY_STORAGE_KEY, uid), category);
 }
 
+export async function loadDailyRemindersEnabled(): Promise<boolean> {
+  return AsyncStorage.getItem(DAILY_REMINDERS_STORAGE_KEY).then((value) => value === "true");
+}
+
+export async function saveDailyRemindersEnabled(enabled: boolean): Promise<void> {
+  await AsyncStorage.setItem(DAILY_REMINDERS_STORAGE_KEY, String(enabled));
+}
+
 export async function clearLocalJouzuData(uid?: string | null): Promise<void> {
-  const keys = [STORAGE_KEY, ROMAJI_STORAGE_KEY, WORD_MASTERY_STORAGE_KEY, PRACTICE_CATEGORY_STORAGE_KEY];
+  const keys = [
+    STORAGE_KEY,
+    ROMAJI_STORAGE_KEY,
+    WORD_MASTERY_STORAGE_KEY,
+    PRACTICE_CATEGORY_STORAGE_KEY,
+    DAILY_REMINDERS_STORAGE_KEY
+  ];
 
   if (uid) {
     keys.push(
