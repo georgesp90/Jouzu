@@ -18,6 +18,10 @@ type ResultModalProps = {
   reviewMode?: boolean;
   onReviewCorrect?: () => void;
   onReviewIncorrect?: () => void;
+  reviewProgress?: {
+    current: number;
+    total: number;
+  };
 };
 
 const resultEmoji: Record<TileStatus, string> = {
@@ -30,6 +34,45 @@ const resultEmoji: Record<TileStatus, string> = {
 
 function titleCase(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+const categoryEmoji: Record<string, string> = {
+  adjective: "✨",
+  adjectives: "✨",
+  animal: "🐾",
+  animals: "🐾",
+  body: "🫶",
+  clothing: "🧢",
+  color: "🎨",
+  colors: "🎨",
+  communication: "💬",
+  description: "✨",
+  education: "✏️",
+  emotion: "💭",
+  emotions: "💭",
+  family: "👪",
+  food: "🍙",
+  health: "🩺",
+  home: "🏠",
+  nature: "🌿",
+  object: "📦",
+  person: "👤",
+  place: "📍",
+  places: "📍",
+  school: "✏️",
+  study: "✏️",
+  time: "🕰️",
+  transport: "🚲",
+  transportation: "🚲",
+  travel: "🧳",
+  verb: "する",
+  verbs: "する",
+  work: "💼"
+};
+
+function formatCategoryChip(category: string): string {
+  const emoji = categoryEmoji[category.toLowerCase()];
+  return `${emoji ? `${emoji} ` : ""}${titleCase(category)}`;
 }
 
 function buildShareText(
@@ -134,7 +177,8 @@ export function ResultModal({
   onClose,
   reviewMode = false,
   onReviewCorrect,
-  onReviewIncorrect
+  onReviewIncorrect,
+  reviewProgress
 }: ResultModalProps) {
   const reduceMotion = useReducedMotion();
   const canPlayPronunciation = Boolean(word.hiragana.trim());
@@ -216,15 +260,45 @@ export function ResultModal({
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
-      <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
-        <Animated.View style={[styles.modal, { transform: [{ scale: modalScale }] }]}>
-          <Text style={styles.eyebrow}>
-            {reviewMode ? "Review card" : solved ? "Solved" : "Today's word"}
-          </Text>
+      <Animated.View
+        style={[
+          styles.backdrop,
+          reviewMode && styles.reviewBackdrop,
+          { opacity: backdropOpacity }
+        ]}
+      >
+        <Animated.View
+          style={[
+            styles.modal,
+            reviewMode && styles.reviewModal,
+            { transform: [{ scale: modalScale }] }
+          ]}
+        >
+          {reviewMode && reviewProgress ? (
+            <View style={styles.reviewProgressBlock}>
+              <Text style={styles.reviewProgressText}>
+                {reviewProgress.current} of {reviewProgress.total}
+              </Text>
+            </View>
+          ) : null}
+          {!reviewMode ? (
+            <Text style={styles.eyebrow}>{solved ? "Solved" : "Today's word"}</Text>
+          ) : null}
           <View style={styles.wordHeader}>
-            <Text style={styles.hiragana}>{word.hiragana}</Text>
-            <Text style={styles.romaji}>{word.romaji}</Text>
-            <Text style={styles.meaning}>{word.english}</Text>
+            <Text style={[styles.hiragana, reviewMode && styles.reviewHiragana]}>
+              {word.hiragana}
+            </Text>
+            {reviewMode ? (
+              <>
+                <Text style={[styles.romaji, styles.reviewRomaji]}>{word.romaji}</Text>
+                <Text style={[styles.meaning, styles.reviewMeaning]}>{word.english}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.romaji}>{word.romaji}</Text>
+                <Text style={styles.meaning}>{word.english}</Text>
+              </>
+            )}
             {shouldShowPerfectSolve ? (
               <View style={styles.perfectBlock}>
                 <Text style={styles.perfectTitle}>Perfect solve ⚡</Text>
@@ -234,7 +308,7 @@ export function ResultModal({
             {canPlayPronunciation ? (
               <Pressable
                 onPress={handleSpeak}
-                style={styles.speechButton}
+                style={[styles.speechButton, reviewMode && styles.reviewSpeechButton]}
                 accessibilityRole="button"
                 accessibilityLabel={`Hear ${word.hiragana}`}
               >
@@ -244,24 +318,46 @@ export function ResultModal({
           </View>
 
           <View style={styles.infoBlock}>
-            <Text style={styles.infoText}>Category: {titleCase(word.category)}</Text>
-            <Text style={styles.infoText}>JLPT: {word.jlpt}</Text>
-            <Text style={styles.infoText}>
-              Definition: {word.refinedDefinition ?? word.definition}
-            </Text>
+            {reviewMode ? (
+              <>
+                <View style={styles.chipRow}>
+                  <View style={styles.metaChip}>
+                    <Text style={styles.metaChipText}>{formatCategoryChip(word.category)}</Text>
+                  </View>
+                  <View style={styles.metaChip}>
+                    <Text style={styles.metaChipText}>{word.jlpt}</Text>
+                  </View>
+                </View>
+                <Text style={styles.definitionText}>
+                  {word.refinedDefinition ?? word.definition}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.infoText}>Category: {titleCase(word.category)}</Text>
+                <Text style={styles.infoText}>JLPT: {word.jlpt}</Text>
+                <Text style={styles.infoText}>
+                  Definition: {word.refinedDefinition ?? word.definition}
+                </Text>
+              </>
+            )}
             {word.confusableWords?.length ? (
               <View style={styles.confusableBlock}>
                 <Text style={styles.confusableTitle}>Often confused with</Text>
                 {word.confusableWords.map((confusable) => (
-                  <Text key={confusable.word} style={styles.confusableText}>
-                    {confusable.word} ({confusable.romaji}) - {confusable.english}
-                    {confusable.note ? ` · ${confusable.note}` : ""}
-                  </Text>
+                  <View key={confusable.word} style={styles.confusableRow}>
+                    <Text style={styles.confusableWordLine}>
+                      {confusable.word} · {confusable.romaji} · {confusable.english}
+                    </Text>
+                    {confusable.note ? (
+                      <Text style={styles.confusableNote}>{confusable.note}</Text>
+                    ) : null}
+                  </View>
                 ))}
               </View>
             ) : null}
             {reviewMode ? (
-              <Text style={styles.infoText}>Mark whether you knew this word.</Text>
+              <Text style={styles.reviewPromptText}>Mark whether you knew this word.</Text>
             ) : (
               <Text style={styles.infoText}>
                 Guesses: {solved ? guessCount : "X"}/{maxGuesses}
@@ -272,10 +368,16 @@ export function ResultModal({
           <View style={styles.actions}>
             {reviewMode ? (
               <>
-                <Pressable onPress={onReviewCorrect} style={styles.primaryButton}>
+                <Pressable
+                  onPress={onReviewCorrect}
+                  style={[styles.primaryButton, styles.reviewActionButton]}
+                >
                   <Text style={styles.primaryButtonText}>Got it</Text>
                 </Pressable>
-                <Pressable onPress={onReviewIncorrect} style={styles.secondaryButton}>
+                <Pressable
+                  onPress={onReviewIncorrect}
+                  style={[styles.secondaryButton, styles.reviewActionButton, styles.reviewMissedButton]}
+                >
                   <Text style={styles.secondaryButtonText}>Missed</Text>
                 </Pressable>
               </>
@@ -310,6 +412,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24
   },
+  reviewBackdrop: {
+    backgroundColor: "rgba(28, 27, 24, 0.62)"
+  },
   modal: {
     width: "100%",
     maxWidth: 420,
@@ -318,6 +423,23 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 14,
     overflow: "hidden"
+  },
+  reviewModal: {
+    maxWidth: 400,
+    borderRadius: 12,
+    padding: 22,
+    gap: 13,
+    borderWidth: 1,
+    borderColor: "#ded6ca"
+  },
+  reviewProgressBlock: {
+    marginBottom: 2
+  },
+  reviewProgressText: {
+    color: "#817565",
+    fontSize: 13,
+    fontWeight: "800",
+    textAlign: "right"
   },
   eyebrow: {
     color: "#7b6f60",
@@ -336,6 +458,11 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     lineHeight: 60
   },
+  reviewHiragana: {
+    fontSize: 60,
+    lineHeight: 68,
+    textAlign: "center"
+  },
   romaji: {
     color: "#4d4840",
     fontSize: 18,
@@ -347,6 +474,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     lineHeight: 21
+  },
+  reviewMeaning: {
+    color: "#4d4840",
+    fontSize: 21,
+    fontWeight: "800",
+    lineHeight: 27,
+    textAlign: "center"
+  },
+  reviewRomaji: {
+    color: "#817565",
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 20,
+    textAlign: "center"
   },
   perfectBlock: {
     alignSelf: "flex-start",
@@ -378,13 +519,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
+  reviewSpeechButton: {
+    alignSelf: "center"
+  },
   speechButtonText: {
     color: "#2f4f4a",
     fontSize: 13,
     fontWeight: "700"
   },
   infoBlock: {
-    gap: 6,
+    gap: 8,
     paddingTop: 6
   },
   infoText: {
@@ -392,11 +536,40 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22
   },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center"
+  },
+  metaChip: {
+    minHeight: 30,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#f7f2ea",
+    paddingHorizontal: 11,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  metaChipText: {
+    color: "#5d5448",
+    fontSize: 13,
+    fontWeight: "800"
+  },
+  definitionText: {
+    color: "#5d5448",
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
+    textAlign: "center",
+    paddingHorizontal: 4
+  },
   confusableBlock: {
-    gap: 4,
+    gap: 7,
     borderTopWidth: 1,
     borderTopColor: "#ded6ca",
-    paddingTop: 8,
+    paddingTop: 10,
     marginTop: 4
   },
   confusableTitle: {
@@ -405,11 +578,34 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     textTransform: "uppercase"
   },
-  confusableText: {
+  confusableRow: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e9e0d2",
+    backgroundColor: "#f9f5ee",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 3
+  },
+  confusableWordLine: {
     color: "#4d4840",
     fontSize: 14,
     fontWeight: "700",
     lineHeight: 20
+  },
+  confusableNote: {
+    color: "#817565",
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18
+  },
+  reviewPromptText: {
+    color: "#817565",
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 18,
+    textAlign: "center",
+    paddingTop: 2
   },
   actions: {
     flexDirection: "row",
@@ -437,6 +633,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "#cbbfad"
+  },
+  reviewActionButton: {
+    height: 50
+  },
+  reviewMissedButton: {
+    backgroundColor: "#fffdf8",
+    borderColor: "#ded6ca"
   },
   secondaryButtonText: {
     color: "#2f4f4a",

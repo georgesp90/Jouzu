@@ -18,6 +18,7 @@ import { KanaKeyboard } from "@/components/KanaKeyboard";
 import { ResultModal } from "@/components/ResultModal";
 import { PaywallModal } from "@/components/PaywallModal";
 import { FoundingUserBadge } from "@/components/FoundingUserBadge";
+import { WelcomeLandingScreen } from "@/components/WelcomeLandingScreen";
 import { acceptedGuesses } from "@/data/acceptedGuesses";
 import { wordPools } from "@/data/words";
 import { auth } from "@/firebase/firebaseConfig";
@@ -71,6 +72,7 @@ import {
   saveWordMastery
 } from "@/utils/storage";
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const KANA_ONLY = /^[\u3040-\u309f]+$/;
 type GameMode = "daily" | "unlimited";
 type AuthMode = "signIn" | "signUp";
@@ -374,7 +376,6 @@ export default function GameScreen() {
   const [loading, setLoading] = useState(true);
   const [showResult, setShowResult] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState("");
@@ -388,6 +389,7 @@ export default function GameScreen() {
   const [shakeTrigger, setShakeTrigger] = useState(0);
   const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showWelcomeLanding, setShowWelcomeLanding] = useState(true);
   const [authMode, setAuthMode] = useState<AuthMode>("signIn");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -404,6 +406,9 @@ export default function GameScreen() {
   const [notificationBusy, setNotificationBusy] = useState(false);
   const [notificationPromptEligible, setNotificationPromptEligible] = useState(false);
   const modeSlide = useRef(new Animated.Value(gameMode === "daily" ? 0 : 1)).current;
+  const reviewCardFlip = useRef(new Animated.Value(0)).current;
+  const reviewCardRevealingRef = useRef(false);
+  const previousUidRef = useRef<string | null>(null);
   const isShortScreen = height < 720;
   const maxGuesses = getMaxGuesses(answerChars.length);
   const maxTileSize = maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48;
@@ -533,6 +538,19 @@ export default function GameScreen() {
 
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (!firebaseUid) {
+      previousUidRef.current = null;
+      setShowWelcomeLanding(true);
+      return;
+    }
+
+    if (previousUidRef.current !== firebaseUid) {
+      previousUidRef.current = firebaseUid;
+      setShowWelcomeLanding(true);
+    }
+  }, [firebaseUid]);
 
   useEffect(() => {
     if (authLoading) {
@@ -785,9 +803,29 @@ export default function GameScreen() {
   };
 
   const revealReviewCard = () => {
-    if (isReviewFlashcardMode && hasReviewWords) {
-      setShowResult(true);
+    if (!isReviewFlashcardMode || !hasReviewWords || reviewCardRevealingRef.current) {
+      return;
     }
+
+    if (reduceMotion) {
+      setShowResult(true);
+      return;
+    }
+
+    reviewCardRevealingRef.current = true;
+    reviewCardFlip.setValue(0);
+    Animated.timing(reviewCardFlip, {
+      toValue: 1,
+      duration: 200,
+      easing: MOTION.easing,
+      useNativeDriver: true
+    }).start(({ finished }) => {
+      reviewCardRevealingRef.current = false;
+      reviewCardFlip.setValue(0);
+      if (finished) {
+        setShowResult(true);
+      }
+    });
   };
 
   const completeReviewCard = (result: "correct" | "incorrect") => {
@@ -828,6 +866,27 @@ export default function GameScreen() {
   const canTapDefinitionHint = hintModeEnabled || incorrectGuessCount >= 2;
   const showHintButton = !completed && !showDefinitionTextHint && canTapDefinitionHint;
   const categoryLabel = `Category: ${word.category}`;
+  const reviewFlashcardAnimatedStyle = {
+    opacity: reviewCardFlip.interpolate({
+      inputRange: [0, 0.82, 1],
+      outputRange: [1, 1, 0.86]
+    }),
+    transform: [
+      { perspective: 900 },
+      {
+        rotateY: reviewCardFlip.interpolate({
+          inputRange: [0, 1],
+          outputRange: ["0deg", "88deg"]
+        })
+      },
+      {
+        scale: reviewCardFlip.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 0.96]
+        })
+      }
+    ]
+  };
   const definitionText = word.refinedDefinition ?? word.definition;
   const isPoliteVerbForm = word.hiragana.endsWith("ます") || word.hiragana.endsWith("ません");
   const canAccessPlus = subscriptionStatus?.canAccessPlus === true;
@@ -835,6 +894,13 @@ export default function GameScreen() {
   const canUsePracticeCategories = canAccessFeature(subscriptionStatus, "practiceCategories");
   const activePracticeCategory = canUsePracticeCategories ? selectedPracticeCategory : "all";
   const activePracticeCategoryLabel = getPracticeCategoryOption(activePracticeCategory).label;
+  const filteredReviewWords = filterWordsByPracticeCategory(reviewWords, activePracticeCategory);
+  const effectiveReviewWords = filteredReviewWords.length > 0 ? filteredReviewWords : reviewWords;
+  const reviewProgressIndex = effectiveReviewWords.findIndex((entry) => entry.id === word.id);
+  const reviewProgress =
+    isReviewFlashcardMode && effectiveReviewWords.length > 0 && reviewProgressIndex >= 0
+      ? { current: reviewProgressIndex + 1, total: effectiveReviewWords.length }
+      : undefined;
   const monthlyPlan = subscriptionStatus?.monthlyPlan ?? {
     id: "monthly" as const,
     title: "Monthly",
@@ -1237,6 +1303,14 @@ export default function GameScreen() {
     inputRange: [0, 1],
     outputRange: [0, 78]
   });
+  const enterDailyFromWelcome = () => {
+    setShowWelcomeLanding(false);
+    handleGameModeChange("daily");
+  };
+  const enterPracticeFromWelcome = () => {
+    setShowWelcomeLanding(false);
+    handleGameModeChange("unlimited");
+  };
 
   if (authLoading) {
     return (
@@ -1323,6 +1397,16 @@ export default function GameScreen() {
     );
   }
 
+  if (showWelcomeLanding) {
+    return (
+      <WelcomeLandingScreen
+        currentStreak={userStats?.currentStreak}
+        onStartDaily={enterDailyFromWelcome}
+        onStartPractice={enterPracticeFromWelcome}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={[styles.container, isShortScreen && styles.shortContainer]}>
@@ -1371,14 +1455,6 @@ export default function GameScreen() {
                 <Text style={styles.statsIcon}>📊</Text>
               </Pressable>
             ) : null}
-            <Pressable
-              onPress={() => setShowHelp(true)}
-              style={styles.helpButton}
-              accessibilityRole="button"
-              accessibilityLabel="Open help"
-            >
-              <Text style={styles.helpIcon}>💡</Text>
-            </Pressable>
             {gameMode === "unlimited" ? (
               <Pressable
                 onPress={handleReviewWeakWordsToggle}
@@ -1450,9 +1526,9 @@ export default function GameScreen() {
             </Text>
           </View>
         ) : isReviewFlashcardMode ? (
-          <Pressable
+          <AnimatedPressable
             onPress={revealReviewCard}
-            style={styles.flashcard}
+            style={[styles.flashcard, reviewFlashcardAnimatedStyle]}
             accessibilityRole="button"
             accessibilityLabel="Reveal review card"
             {...reviewCardPanResponder.panHandlers}
@@ -1464,7 +1540,7 @@ export default function GameScreen() {
               Mastery {getMasteryLevel(masteryByWord, word.id)} · {reviewResultLabel}
             </Text>
             <Text style={styles.flashcardInstruction}>Tap or swipe to reveal</Text>
-          </Pressable>
+          </AnimatedPressable>
         ) : (
           <>
             <GameGrid
@@ -1547,6 +1623,7 @@ export default function GameScreen() {
         reviewMode={isReviewFlashcardMode}
         onReviewCorrect={() => completeReviewCard("correct")}
         onReviewIncorrect={() => completeReviewCard("incorrect")}
+        reviewProgress={reviewProgress}
       />
 
       <PaywallModal
@@ -1833,13 +1910,6 @@ export default function GameScreen() {
         </Pressable>
       </Modal>
 
-      <Modal visible={showHelp} transparent animationType="fade" onRequestClose={() => setShowHelp(false)}>
-        <Pressable style={styles.helpBackdrop} onPress={() => setShowHelp(false)}>
-          <View style={styles.helpMenu}>
-            <Text style={styles.helpText}>Guess the Japanese word from the category.</Text>
-          </View>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -1970,14 +2040,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6
   },
-  helpButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#e9e0d2"
-  },
   statsButton: {
     width: 38,
     height: 38,
@@ -1997,10 +2059,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "900",
     lineHeight: 24
-  },
-  helpIcon: {
-    fontSize: 20,
-    lineHeight: 22
   },
   reviewIconButton: {
     width: 38,
@@ -2511,27 +2569,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "900"
   },
-  helpBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(28, 27, 24, 0.2)",
-    alignItems: "flex-end",
-    justifyContent: "flex-start",
-    paddingHorizontal: 18,
-    paddingTop: 64
-  },
-  helpMenu: {
-    maxWidth: 280,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ded6ca",
-    backgroundColor: "#fffdf8",
-    paddingHorizontal: 14,
-    paddingVertical: 12
-  },
-  helpText: {
-    color: "#2b2a27",
-    fontSize: 15,
-    fontWeight: "800",
-    lineHeight: 21
-  }
 });

@@ -34,7 +34,7 @@ export function FoundingUserBadge({
             <Text style={styles.eyebrow}>Jozu</Text>
             <Text style={styles.title}>Founding User</Text>
             <Text style={styles.body}>
-              You were one of the first people here. Thank you for supporting Jouzu early.
+              You were one of the first people here. Thank you for supporting Jozu early.
             </Text>
             <Text style={styles.bodySecondary}>
               Your support helped shape the app from the beginning.
