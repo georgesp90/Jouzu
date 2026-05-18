@@ -71,10 +71,11 @@ import {
   saveShowRomajiPreference,
   saveWordMastery
 } from "@/utils/storage";
+import { KanaRushScreen } from "@/src/modes/kanaRush/KanaRushScreen";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const KANA_ONLY = /^[\u3040-\u309f]+$/;
-type GameMode = "daily" | "unlimited";
+type GameMode = "daily" | "unlimited" | "rush";
 type AuthMode = "signIn" | "signUp";
 type PendingPlusAction = "practice" | "review" | null;
 type PracticeCategory = "all" | string;
@@ -772,7 +773,7 @@ export default function GameScreen() {
           });
         }
       });
-    } else {
+    } else if (nextGameMode === "unlimited") {
       advancePracticeWord(selectedJLPTLevel, unlimitedWord.id);
     }
   };
@@ -918,13 +919,15 @@ export default function GameScreen() {
   };
 
   useEffect(() => {
+    const nextModeIndex = gameMode === "daily" ? 0 : gameMode === "unlimited" ? 1 : 2;
+
     if (reduceMotion) {
-      modeSlide.setValue(gameMode === "daily" ? 0 : 1);
+      modeSlide.setValue(nextModeIndex);
       return;
     }
 
     Animated.timing(modeSlide, {
-      toValue: gameMode === "daily" ? 0 : 1,
+      toValue: nextModeIndex,
       duration: MOTION.base,
       easing: MOTION.easing,
       useNativeDriver: true
@@ -1300,8 +1303,8 @@ export default function GameScreen() {
     ? wordsById.get(userStats.todayPlay.wordId)
     : null;
   const modeIndicatorTranslateX = modeSlide.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 78]
+    inputRange: [0, 1, 2],
+    outputRange: [0, 78, 156]
   });
   const enterDailyFromWelcome = () => {
     setShowWelcomeLanding(false);
@@ -1310,6 +1313,10 @@ export default function GameScreen() {
   const enterPracticeFromWelcome = () => {
     setShowWelcomeLanding(false);
     handleGameModeChange("unlimited");
+  };
+  const enterRushFromWelcome = () => {
+    setShowWelcomeLanding(false);
+    handleGameModeChange("rush");
   };
 
   if (authLoading) {
@@ -1403,6 +1410,7 @@ export default function GameScreen() {
         currentStreak={userStats?.currentStreak}
         onStartDaily={enterDailyFromWelcome}
         onStartPractice={enterPracticeFromWelcome}
+        onStartRush={enterRushFromWelcome}
       />
     );
   }
@@ -1435,6 +1443,16 @@ export default function GameScreen() {
                 style={[styles.modeSegmentText, gameMode === "unlimited" && styles.activeSegmentText]}
               >
                 Practice
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleGameModeChange("rush")}
+              style={styles.modeSegment}
+            >
+              <Text
+                style={[styles.modeSegmentText, gameMode === "rush" && styles.activeSegmentText]}
+              >
+                Rush
               </Text>
             </Pressable>
           </View>
@@ -1491,16 +1509,24 @@ export default function GameScreen() {
               isShortScreen && styles.shortTitle
             ]}
           >
-            {gameMode === "daily" ? "Jozu" : reviewWeakOnly ? "Review Practice" : "Unlimited Practice"}
+            {gameMode === "daily"
+              ? "Jozu"
+              : gameMode === "rush"
+                ? "Kana Rush"
+                : reviewWeakOnly
+                  ? "Review Practice"
+                  : "Unlimited Practice"}
           </Text>
           <Text style={styles.kicker}>
             {gameMode === "daily"
               ? `Daily Hiragana Puzzle #${formattedPuzzleNumber} · ${dailyPuzzle.jlptLevel}`
-              : reviewWeakOnly
-                ? hasReviewWords
-                  ? `${activePracticeCategoryLabel} · ${reviewWords.length}`
-                  : "No missed words yet"
-                : `${activePracticeCategoryLabel} · ${word.jlpt}`}
+              : gameMode === "rush"
+                ? "Swipe kana. Find words. Beat the clock."
+                : reviewWeakOnly
+                  ? hasReviewWords
+                    ? `${activePracticeCategoryLabel} · ${reviewWords.length}`
+                    : "No missed words yet"
+                  : `${activePracticeCategoryLabel} · ${word.jlpt}`}
           </Text>
         </View>
 
@@ -1516,7 +1542,9 @@ export default function GameScreen() {
           </View>
         ) : null}
 
-        {isReviewFlashcardMode && !hasReviewWords ? (
+        {gameMode === "rush" ? (
+          <KanaRushScreen acceptedWords={acceptedGuesses} />
+        ) : isReviewFlashcardMode && !hasReviewWords ? (
           <View style={styles.flashcard}>
             <Text style={styles.flashcardIcon}>📝</Text>
             <Text style={styles.flashcardTitle}>All Clear</Text>

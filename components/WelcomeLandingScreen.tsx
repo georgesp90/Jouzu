@@ -6,6 +6,7 @@ type WelcomeLandingScreenProps = {
   currentStreak?: number;
   onStartDaily: () => void;
   onStartPractice: () => void;
+  onStartRush: () => void;
 };
 
 const previewTiles = [
@@ -49,7 +50,8 @@ function formatToday(): string {
 export function WelcomeLandingScreen({
   currentStreak,
   onStartDaily,
-  onStartPractice
+  onStartPractice,
+  onStartRush
 }: WelcomeLandingScreenProps) {
   const tileReveals = useMemo(
     () => previewTiles.map(() => new Animated.Value(0)),
@@ -143,6 +145,14 @@ export function WelcomeLandingScreen({
             accessibilityLabel="Open Practice Mode"
           >
             <Text style={styles.secondaryButtonText}>Practice Mode</Text>
+          </Pressable>
+          <Pressable
+            onPress={onStartRush}
+            style={styles.tertiaryButton}
+            accessibilityRole="button"
+            accessibilityLabel="Open Kana Rush"
+          >
+            <Text style={styles.tertiaryButtonText}>Kana Rush</Text>
           </Pressable>
         </View>
 
@@ -306,6 +316,19 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: "#2f4f4a",
     fontSize: 16,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  tertiaryButton: {
+    minHeight: 42,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18
+  },
+  tertiaryButtonText: {
+    color: "#817565",
+    fontSize: 15,
     fontWeight: "900",
     textAlign: "center"
   },
