@@ -5,6 +5,8 @@ export type FeedbackEvent =
   | "delete"
   | "submit"
   | "reveal"
+  | "success"
+  | "error"
   | "win"
   | "perfect";
 
@@ -49,6 +51,11 @@ export async function playHapticFeedback(event: FeedbackEvent) {
 
     if (event === "submit") {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      return;
+    }
+
+    if (event === "error") {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
 

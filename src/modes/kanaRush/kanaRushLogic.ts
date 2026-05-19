@@ -77,18 +77,18 @@ export function buildWordFromPath(board: KanaRushTile[][], path: KanaRushPositio
 
 export function getScoreForLength(length: number): number {
   if (length === 2) {
-    return 8;
+    return 1;
   }
 
   if (length === 3) {
-    return 32;
+    return 2;
   }
 
   if (length === 4) {
-    return 78;
+    return 4;
   }
 
-  return 130 + Math.max(0, length - 5) * 30;
+  return 6 + Math.max(0, length - 5) * 2;
 }
 
 export function getTimeBonusForLength(length: number): number {

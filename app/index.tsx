@@ -20,6 +20,7 @@ import { PaywallModal } from "@/components/PaywallModal";
 import { FoundingUserBadge } from "@/components/FoundingUserBadge";
 import { WelcomeLandingScreen } from "@/components/WelcomeLandingScreen";
 import { acceptedGuesses } from "@/data/acceptedGuesses";
+import { kanaRushWordSet } from "@/data/kanaRushVocabulary";
 import { wordPools } from "@/data/words";
 import { auth } from "@/firebase/firebaseConfig";
 import {
@@ -262,7 +263,15 @@ function selectRandomWord(
   const excludedIds = new Set(excludedWordIds);
   const levelPool = reviewWeakOnly ? getReviewWords(masteryByWord) : pool;
   const filteredPool = filterWordsByPracticeCategory(levelPool, practiceCategory);
-  const fallbackPool = filteredPool.length > 0 ? filteredPool : levelPool.length > 0 ? levelPool : pool;
+  const fallbackPool = reviewWeakOnly
+    ? filteredPool.length > 0
+      ? filteredPool
+      : levelPool.length > 0
+        ? levelPool
+        : pool
+    : filteredPool.length > 0
+      ? filteredPool
+      : pool;
   const availableWords = fallbackPool.filter((word) => !excludedIds.has(word.id));
   const candidatePool = availableWords.length > 0 ? availableWords : fallbackPool;
 
@@ -476,8 +485,17 @@ export default function GameScreen() {
       const pool = wordPools[level].length > 0 ? wordPools[level] : wordPools.N5;
       const eligiblePool = nextReviewWeakOnly ? getReviewWords(nextMasteryByWord) : pool;
       const filteredEligiblePool = filterWordsByPracticeCategory(eligiblePool, nextPracticeCategory);
-      const candidateCyclePool =
-        filteredEligiblePool.length > 0 ? filteredEligiblePool : eligiblePool.length > 0 ? eligiblePool : pool;
+      if (nextReviewWeakOnly && filteredEligiblePool.length === 0) {
+        return seenIdsByLevel;
+      }
+
+      const candidateCyclePool = nextReviewWeakOnly
+        ? filteredEligiblePool
+        : filteredEligiblePool.length > 0
+          ? filteredEligiblePool
+          : eligiblePool.length > 0
+            ? eligiblePool
+            : pool;
       const poolIds = new Set(candidateCyclePool.map((entry) => entry.id));
       const seenIds = seenIdsByLevel[level].filter((id) => poolIds.has(id));
       const cycleIsComplete = seenIds.length >= candidateCyclePool.length;
@@ -800,7 +818,7 @@ export default function GameScreen() {
     const nextReviewWeakOnly = !reviewWeakOnly;
     setReviewWeakOnly(nextReviewWeakOnly);
     resetBoard();
-    advancePracticeWord(selectedJLPTLevel, unlimitedWord.id, nextReviewWeakOnly);
+    advancePracticeWord(selectedJLPTLevel, unlimitedWord.id, nextReviewWeakOnly, masteryByWord, activePracticeCategory);
   };
 
   const revealReviewCard = () => {
@@ -843,7 +861,7 @@ export default function GameScreen() {
     setMasteryFeedback(result === "correct" ? "Mastery +1" : "Added to Review");
     setShowResult(false);
     resetBoard(true);
-    advancePracticeWord(selectedJLPTLevel, word.id, true, nextMastery);
+    advancePracticeWord(selectedJLPTLevel, word.id, true, nextMastery, activePracticeCategory);
   };
 
   const reviewCardPanResponder = useMemo(
@@ -896,11 +914,11 @@ export default function GameScreen() {
   const activePracticeCategory = canUsePracticeCategories ? selectedPracticeCategory : "all";
   const activePracticeCategoryLabel = getPracticeCategoryOption(activePracticeCategory).label;
   const filteredReviewWords = filterWordsByPracticeCategory(reviewWords, activePracticeCategory);
-  const effectiveReviewWords = filteredReviewWords.length > 0 ? filteredReviewWords : reviewWords;
-  const reviewProgressIndex = effectiveReviewWords.findIndex((entry) => entry.id === word.id);
+  const hasReviewWordsForActiveCategory = filteredReviewWords.length > 0;
+  const reviewProgressIndex = filteredReviewWords.findIndex((entry) => entry.id === word.id);
   const reviewProgress =
-    isReviewFlashcardMode && effectiveReviewWords.length > 0 && reviewProgressIndex >= 0
-      ? { current: reviewProgressIndex + 1, total: effectiveReviewWords.length }
+    isReviewFlashcardMode && hasReviewWordsForActiveCategory && reviewProgressIndex >= 0
+      ? { current: reviewProgressIndex + 1, total: filteredReviewWords.length }
       : undefined;
   const monthlyPlan = subscriptionStatus?.monthlyPlan ?? {
     id: "monthly" as const,
@@ -1501,34 +1519,28 @@ export default function GameScreen() {
           </View>
         </View>
 
-        <View style={[styles.header, isShortScreen && styles.shortHeader]}>
-          <Text
-            style={[
-              styles.title,
-              gameMode === "unlimited" && styles.practiceTitle,
-              isShortScreen && styles.shortTitle
-            ]}
-          >
-            {gameMode === "daily"
-              ? "Jozu"
-              : gameMode === "rush"
-                ? "Kana Rush"
-                : reviewWeakOnly
-                  ? "Review Practice"
-                  : "Unlimited Practice"}
-          </Text>
-          <Text style={styles.kicker}>
-            {gameMode === "daily"
-              ? `Daily Hiragana Puzzle #${formattedPuzzleNumber} · ${dailyPuzzle.jlptLevel}`
-              : gameMode === "rush"
-                ? "Swipe kana. Find words. Beat the clock."
+        {gameMode !== "rush" ? (
+          <View style={[styles.header, isShortScreen && styles.shortHeader]}>
+            <Text
+              style={[
+                styles.title,
+                gameMode === "unlimited" && styles.practiceTitle,
+                isShortScreen && styles.shortTitle
+              ]}
+            >
+              {gameMode === "daily" ? "Jozu" : reviewWeakOnly ? "Review Practice" : "Unlimited Practice"}
+            </Text>
+            <Text style={styles.kicker}>
+              {gameMode === "daily"
+                ? `Daily Hiragana Puzzle #${formattedPuzzleNumber} · ${dailyPuzzle.jlptLevel}`
                 : reviewWeakOnly
                   ? hasReviewWords
-                    ? `${activePracticeCategoryLabel} · ${reviewWords.length}`
+                    ? `${activePracticeCategoryLabel} · ${filteredReviewWords.length}`
                     : "No missed words yet"
                   : `${activePracticeCategoryLabel} · ${word.jlpt}`}
-          </Text>
-        </View>
+            </Text>
+          </View>
+        ) : null}
 
         {gameMode === "unlimited" ? (
           <View style={styles.practicePanel}>
@@ -1543,14 +1555,20 @@ export default function GameScreen() {
         ) : null}
 
         {gameMode === "rush" ? (
-          <KanaRushScreen acceptedWords={acceptedGuesses} />
-        ) : isReviewFlashcardMode && !hasReviewWords ? (
+          <KanaRushScreen acceptedWords={kanaRushWordSet} />
+        ) : isReviewFlashcardMode && !hasReviewWordsForActiveCategory ? (
           <View style={styles.flashcard}>
             <Text style={styles.flashcardIcon}>📝</Text>
-            <Text style={styles.flashcardTitle}>All Clear</Text>
-            <Text style={styles.flashcardCategory}>Missed words will appear here.</Text>
+            <Text style={styles.flashcardTitle}>{hasReviewWords ? "No Cards Here" : "All Clear"}</Text>
+            <Text style={styles.flashcardCategory}>
+              {hasReviewWords
+                ? `${activePracticeCategoryLabel} has no review words yet.`
+                : "Missed words will appear here."}
+            </Text>
             <Text style={styles.flashcardMeta}>
-              Fail, skip, or miss a Daily or Practice word to add it to review.
+              {hasReviewWords
+                ? "Choose another category or miss a word in this category."
+                : "Fail, skip, or miss a Daily or Practice word to add it to review."}
             </Text>
           </View>
         ) : isReviewFlashcardMode ? (

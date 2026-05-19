@@ -42,8 +42,11 @@ const solver = loadTsModule("../src/modes/kanaRush/kanaRushSolver.ts", {
 
 assert.equal(logic.isAdjacent({ row: 0, col: 0 }, { row: 1, col: 1 }), true);
 assert.equal(logic.isAdjacent({ row: 0, col: 0 }, { row: 2, col: 0 }), false);
-assert.equal(logic.getScoreForLength(2), 8);
-assert.equal(logic.getScoreForLength(5), 130);
+assert.equal(logic.getScoreForLength(2), 1);
+assert.equal(logic.getScoreForLength(3), 2);
+assert.equal(logic.getScoreForLength(4), 4);
+assert.equal(logic.getScoreForLength(5), 6);
+assert.equal(logic.getScoreForLength(6), 8);
 assert.equal(logic.getTimeBonusForLength(2), 0.3);
 assert.equal(logic.getTimeBonusForLength(5), 5.5);
 assert.equal(logic.getKanaRushBoardSizeForTime(30), 8);
@@ -97,6 +100,20 @@ const board = [
 ];
 assert.equal(JSON.stringify(solver.solveKanaRushBoard(board, trie, new Set()).sort()), JSON.stringify(["いぬ", "ねこ"]));
 assert.equal(JSON.stringify(solver.solveKanaRushBoard(board, trie, new Set(["ねこ"]))), JSON.stringify(["いぬ"]));
+assert.equal(JSON.stringify(solver.findValidWordsOnBoard(board, trie, new Set()).sort()), JSON.stringify(["いぬ", "ねこ"]));
+assert.equal(solver.boardHasEnoughWords(board, trie, new Set(), 2), true);
+assert.equal(solver.boardHasEnoughWords(board, trie, new Set(["ねこ"]), 2), false);
+assert.equal(
+  JSON.stringify(solver.findStarterCells(board, trie, new Set()).map(logic.positionKey).sort()),
+  JSON.stringify(["0:0", "1:0"])
+);
+assert.equal(
+  JSON.stringify(solver.findStarterCells(board, trie, new Set(["ねこ"])).map(logic.positionKey)),
+  JSON.stringify(["1:0"])
+);
+
+const generatedBoard = solver.generateBoard({ size: 5, trie, foundWords: new Set(), threshold: 1, maxRetries: 3 });
+assert.equal(solver.findValidWordsOnBoard(generatedBoard, trie, new Set(), { limit: 1 }).length >= 1, true);
 
 const repairedBoard = solver.repairBoardIfNeeded(logic.createKanaRushBoard(5), trie, new Set(), 1);
 assert.equal(solver.solveKanaRushBoard(repairedBoard, trie, new Set(), { limit: 1 }).length >= 1, true);
