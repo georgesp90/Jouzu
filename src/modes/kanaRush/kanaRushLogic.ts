@@ -93,18 +93,18 @@ export function getScoreForLength(length: number): number {
 
 export function getTimeBonusForLength(length: number): number {
   if (length === 2) {
-    return 0.3;
+    return 1;
   }
 
   if (length === 3) {
-    return 1.6;
+    return 2;
   }
 
   if (length === 4) {
-    return 3.2;
+    return 4;
   }
 
-  return 5.5;
+  return 6 + Math.max(0, length - 5);
 }
 
 export function evaluateKanaRushSubmission({

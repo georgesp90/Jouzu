@@ -113,6 +113,20 @@ function entitlementsFromSnapshot(data: UserStatsDoc): UserEntitlements {
   };
 }
 
+export function isBeforePaywallLaunch(date = new Date()): boolean {
+  return date.getTime() < new Date(PAYWALL_LAUNCH_DATE).getTime();
+}
+
+function legacyEntitlementPayload(reason = "early_adopter") {
+  return {
+    entitlements: {
+      legacyPlus: true,
+      legacyReason: reason,
+      legacyGrantedAt: serverTimestamp()
+    }
+  };
+}
+
 function playFromSnapshot(date: string, data: DailyPlayDoc): DailyPlay {
   return {
     date,
@@ -248,7 +262,8 @@ export async function initUserIfNeeded(uid: string, email?: string | null): Prom
         email: email ?? null,
         lastPlayedDate: null,
         currentStreak: 0,
-        bestStreak: 0
+        bestStreak: 0,
+        ...(isBeforePaywallLaunch() ? legacyEntitlementPayload() : {})
       });
     } else if (email) {
       await setDoc(userRef, { email }, { merge: true });
@@ -290,26 +305,23 @@ export async function migrateLegacyPlusIfEligible(uid: string): Promise<UserEnti
     }
 
     const createdAt = timestampToDate(userData.createdAt);
+    const eligibleByCurrentWindow = isBeforePaywallLaunch();
+    const eligibleByCreatedAt =
+      createdAt !== null && createdAt.getTime() < new Date(PAYWALL_LAUNCH_DATE).getTime();
 
-    if (!createdAt || createdAt.getTime() >= new Date(PAYWALL_LAUNCH_DATE).getTime()) {
+    if (!eligibleByCurrentWindow && !eligibleByCreatedAt) {
       return currentEntitlements;
     }
 
     await setDoc(
       userRef,
-      {
-        entitlements: {
-          legacyPlus: true,
-          legacyReason: "early_adopter",
-          legacyGrantedAt: serverTimestamp()
-        }
-      },
+      legacyEntitlementPayload(eligibleByCurrentWindow ? "pre_launch_window" : "early_adopter"),
       { merge: true }
     );
 
     return {
       legacyPlus: true,
-      legacyReason: "early_adopter",
+      legacyReason: eligibleByCurrentWindow ? "pre_launch_window" : "early_adopter",
       legacyGrantedAt: new Date()
     };
   } catch (error) {

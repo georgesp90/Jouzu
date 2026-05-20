@@ -31,6 +31,7 @@ import {
   getUserStats,
   hasPlayedToday,
   initUserIfNeeded,
+  isBeforePaywallLaunch,
   migrateLegacyPlusIfEligible,
   saveDailyPlayForCurrentUser,
   sendJouzuPasswordReset,
@@ -908,8 +909,9 @@ export default function GameScreen() {
   };
   const definitionText = word.refinedDefinition ?? word.definition;
   const isPoliteVerbForm = word.hiragana.endsWith("ます") || word.hiragana.endsWith("ません");
-  const canAccessPlus = subscriptionStatus?.canAccessPlus === true;
-  const legacyPlus = subscriptionStatus?.legacyPlus === true;
+  const preLaunchLegacyWindow = isBeforePaywallLaunch();
+  const canAccessPlus = subscriptionStatus?.canAccessPlus === true || preLaunchLegacyWindow;
+  const legacyPlus = subscriptionStatus?.legacyPlus === true || preLaunchLegacyWindow;
   const canUsePracticeCategories = canAccessFeature(subscriptionStatus, "practiceCategories");
   const activePracticeCategory = canUsePracticeCategories ? selectedPracticeCategory : "all";
   const activePracticeCategoryLabel = getPracticeCategoryOption(activePracticeCategory).label;

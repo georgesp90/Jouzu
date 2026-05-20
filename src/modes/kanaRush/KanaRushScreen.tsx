@@ -31,8 +31,8 @@ type KanaRushScreenProps = {
 };
 
 const TILE_GAP = 5;
-const TILE_HIT_SLOP = 4;
-const PATH_LINE_WIDTH = 7;
+const TILE_TOUCH_RADIUS_MULTIPLIER = 0.78;
+const PATH_LINE_WIDTH = 9;
 const COMBO_WINDOW_MS = 2500;
 const VALID_FEEDBACK_DELAY_MS = 180;
 const INVALID_FEEDBACK_DELAY_MS = 220;
@@ -86,16 +86,15 @@ function getPositionFromPoint({
   }
 
   const unitSize = tileSize + TILE_GAP;
-  const col = Math.floor(x / unitSize);
-  const row = Math.floor(y / unitSize);
-  const tileLeft = col * unitSize;
-  const tileTop = row * unitSize;
+  const col = Math.max(0, Math.min(boardSize - 1, Math.round((x - tileSize / 2) / unitSize)));
+  const row = Math.max(0, Math.min(boardSize - 1, Math.round((y - tileSize / 2) / unitSize)));
+  const tileCenterX = col * unitSize + tileSize / 2;
+  const tileCenterY = row * unitSize + tileSize / 2;
+  const distanceFromCenter = Math.sqrt((x - tileCenterX) ** 2 + (y - tileCenterY) ** 2);
 
-  if (row < 0 || col < 0 || row >= boardSize || col >= boardSize) {
-    return null;
-  }
-
-  if (x > tileLeft + tileSize + TILE_HIT_SLOP || y > tileTop + tileSize + TILE_HIT_SLOP) {
+  // Diagonal swipes naturally pass through tile corners and gaps. Choosing the nearest
+  // tile center gives the gesture a forgiving "magnetic" feel without changing rules.
+  if (distanceFromCenter > tileSize * TILE_TOUCH_RADIUS_MULTIPLIER) {
     return null;
   }
 
@@ -985,12 +984,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     height: PATH_LINE_WIDTH,
     borderRadius: 999,
-    backgroundColor: "rgba(47, 79, 74, 0.62)",
+    backgroundColor: "rgba(47, 79, 74, 0.7)",
     shadowColor: "#2f4f4a",
-    shadowOpacity: 0.28,
-    shadowRadius: 7,
+    shadowOpacity: 0.34,
+    shadowRadius: 9,
     shadowOffset: { width: 0, height: 2 },
-    zIndex: 1
+    zIndex: 4
   },
   tile: {
     position: "absolute",
@@ -1028,8 +1027,8 @@ const styles = StyleSheet.create({
     borderColor: "#2f4f4a",
     backgroundColor: "#2f4f4a",
     shadowColor: "#2f4f4a",
-    shadowOpacity: 0.3,
-    shadowRadius: 11,
+    shadowOpacity: 0.38,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
     zIndex: 5

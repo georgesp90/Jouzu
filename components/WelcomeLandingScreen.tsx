@@ -320,15 +320,18 @@ const styles = StyleSheet.create({
     textAlign: "center"
   },
   tertiaryButton: {
-    minHeight: 42,
+    minHeight: 48,
     borderRadius: 9,
+    borderWidth: 2,
+    borderColor: "#d7aa42",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#fffdf8",
     paddingHorizontal: 18
   },
   tertiaryButtonText: {
-    color: "#817565",
-    fontSize: 15,
+    color: "#2f4f4a",
+    fontSize: 16,
     fontWeight: "900",
     textAlign: "center"
   },

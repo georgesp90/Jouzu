@@ -260,6 +260,18 @@ function getNeighbors(position: KanaRushPosition, boardSize: number): KanaRushPo
   return neighbors;
 }
 
+function pathUsesDiagonalStep(path: KanaRushPosition[]): boolean {
+  return path.some((position, index) => {
+    const previousPosition = path[index - 1];
+
+    if (!previousPosition) {
+      return false;
+    }
+
+    return Math.abs(position.row - previousPosition.row) === 1 && Math.abs(position.col - previousPosition.col) === 1;
+  });
+}
+
 export function solveKanaRushBoard(
   board: KanaRushTile[][],
   trie: KanaTrie,
@@ -438,6 +450,12 @@ export function findStarterPaths(
 
   return hintPaths
     .sort((a, b) => {
+      const diagonalDifference = Number(pathUsesDiagonalStep(a.path)) - Number(pathUsesDiagonalStep(b.path));
+
+      if (diagonalDifference !== 0) {
+        return diagonalDifference;
+      }
+
       const lengthDifference = a.path.length - b.path.length;
 
       if (lengthDifference !== 0) {
@@ -560,12 +578,8 @@ function getStraightAdjacentPath(
   const directions = shufflePositions([
     { row: 0, col: 1 },
     { row: 1, col: 0 },
-    { row: 1, col: 1 },
-    { row: 1, col: -1 },
     { row: 0, col: -1 },
-    { row: -1, col: 0 },
-    { row: -1, col: -1 },
-    { row: -1, col: 1 }
+    { row: -1, col: 0 }
   ]);
 
   for (let attempt = 0; attempt < 100; attempt += 1) {
@@ -580,6 +594,84 @@ function getStraightAdjacentPath(
         col: start.col + direction.col * index
       }));
 
+      const isUsablePath = path.every(
+        (position) =>
+          position.row >= 0 &&
+          position.col >= 0 &&
+          position.row < boardSize &&
+          position.col < boardSize &&
+          !blockedPositions.has(positionKey(position))
+      );
+
+      if (isUsablePath) {
+        return path;
+      }
+    }
+  }
+
+  return null;
+}
+
+function getLShapeAdjacentPath(
+  boardSize: number,
+  length: number,
+  blockedPositions: Set<string> = new Set()
+): KanaRushPosition[] | null {
+  if (length !== 3) {
+    return null;
+  }
+
+  const directionPairs = shufflePositions([
+    [
+      { row: 0, col: 1 },
+      { row: 1, col: 0 }
+    ],
+    [
+      { row: 0, col: 1 },
+      { row: -1, col: 0 }
+    ],
+    [
+      { row: 0, col: -1 },
+      { row: 1, col: 0 }
+    ],
+    [
+      { row: 0, col: -1 },
+      { row: -1, col: 0 }
+    ],
+    [
+      { row: 1, col: 0 },
+      { row: 0, col: 1 }
+    ],
+    [
+      { row: 1, col: 0 },
+      { row: 0, col: -1 }
+    ],
+    [
+      { row: -1, col: 0 },
+      { row: 0, col: 1 }
+    ],
+    [
+      { row: -1, col: 0 },
+      { row: 0, col: -1 }
+    ]
+  ]);
+
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const start = {
+      row: Math.floor(Math.random() * boardSize),
+      col: Math.floor(Math.random() * boardSize)
+    };
+
+    for (const [firstDirection, secondDirection] of directionPairs) {
+      const middle = {
+        row: start.row + firstDirection.row,
+        col: start.col + firstDirection.col
+      };
+      const end = {
+        row: middle.row + secondDirection.row,
+        col: middle.col + secondDirection.col
+      };
+      const path = [start, middle, end];
       const isUsablePath = path.every(
         (position) =>
           position.row >= 0 &&
@@ -635,7 +727,10 @@ function seedBoardWithKnownWord(board: KanaRushTile[][], trie: KanaTrie): KanaRu
   }
 
   const characters = getKanaCharacters(word);
-  const path = getStraightAdjacentPath(board.length, characters.length) ?? getRandomAdjacentPath(board.length, characters.length);
+  const path =
+    getLShapeAdjacentPath(board.length, characters.length) ??
+    getStraightAdjacentPath(board.length, characters.length) ??
+    getRandomAdjacentPath(board.length, characters.length);
 
   if (!path) {
     return board;
@@ -658,7 +753,11 @@ function seedBoardWithKnownWords(
 ): KanaRushTile[][] {
   const seededBoard = cloneBoard(board);
   const occupiedPositions = new Set<string>();
-  const candidates = shuffleWords(getBeginnerSeedCandidates(trie, board.length, excludedWords));
+  const seedCandidates = getBeginnerSeedCandidates(trie, board.length, excludedWords);
+  const candidates = [
+    ...shuffleWords(seedCandidates.filter((word) => getKanaCharacters(word).length === 3)),
+    ...shuffleWords(seedCandidates.filter((word) => getKanaCharacters(word).length !== 3))
+  ];
   let seededWordCount = 0;
 
   for (const word of candidates) {
@@ -668,6 +767,7 @@ function seedBoardWithKnownWords(
 
     const characters = getKanaCharacters(word);
     const path =
+      getLShapeAdjacentPath(board.length, characters.length, occupiedPositions) ??
       getStraightAdjacentPath(board.length, characters.length, occupiedPositions) ??
       getRandomAdjacentPath(board.length, characters.length, occupiedPositions);
 
@@ -687,18 +787,18 @@ function seedBoardWithKnownWords(
 
 function getBeginnerSeedTarget(boardSize: number): number {
   if (boardSize >= 8) {
-    return 5;
+    return 7;
   }
 
   if (boardSize >= 7) {
-    return 4;
+    return 6;
   }
 
   if (boardSize >= 6) {
-    return 3;
+    return 5;
   }
 
-  return 2;
+  return 3;
 }
 
 export function boardHasEnoughWords(
