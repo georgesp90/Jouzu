@@ -1,6 +1,6 @@
-import { WordEntry } from "@/types/game";
+import { WordEntry, WordSeed } from "@/types/game";
 
-export const words: WordEntry[] = [
+const wordSeeds: WordSeed[] = [
   {
     id: "neko-001",
     hiragana: "ねこ",
@@ -4729,6 +4729,12 @@ export const words: WordEntry[] = [
     ]
   }
 ];
+
+export const words: WordEntry[] = wordSeeds.map((word) => ({
+  difficulty: word.difficulty ?? (word.jlpt === "N3" ? "hard" : word.jlpt === "N4" ? "medium" : "easy"),
+  dailyEligible: word.dailyEligible ?? true,
+  ...word
+}));
 
 export const wordPools = {
   N5: words.filter((word) => word.jlpt === "N5"),

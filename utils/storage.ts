@@ -6,6 +6,8 @@ const ROMAJI_STORAGE_KEY = "jozu_show_romaji";
 const WORD_MASTERY_STORAGE_KEY = "jozu_word_mastery";
 const PRACTICE_CATEGORY_STORAGE_KEY = "jozu_practice_category";
 const DAILY_REMINDERS_STORAGE_KEY = "jozu_daily_reminders_enabled";
+const HOW_TO_PLAY_STORAGE_KEY = "jozu_has_seen_how_to_play";
+const EXTRA_GUESS_GRANTED_STORAGE_KEY = "jozu_extra_guess_granted";
 
 function userScopedKey(key: string, uid?: string | null): string {
   return uid ? `${key}:${uid}` : key;
@@ -62,22 +64,58 @@ export async function saveDailyRemindersEnabled(enabled: boolean): Promise<void>
   await AsyncStorage.setItem(DAILY_REMINDERS_STORAGE_KEY, String(enabled));
 }
 
+export async function loadHasSeenHowToPlay(uid?: string | null): Promise<boolean> {
+  return AsyncStorage.getItem(userScopedKey(HOW_TO_PLAY_STORAGE_KEY, uid)).then((value) => value === "true");
+}
+
+export async function saveHasSeenHowToPlay(hasSeen: boolean, uid?: string | null): Promise<void> {
+  await AsyncStorage.setItem(userScopedKey(HOW_TO_PLAY_STORAGE_KEY, uid), String(hasSeen));
+}
+
+export async function loadExtraGuessGranted(
+  dailyPuzzleKey: string,
+  uid?: string | null
+): Promise<boolean> {
+  return AsyncStorage.getItem(
+    userScopedKey(`${EXTRA_GUESS_GRANTED_STORAGE_KEY}:${dailyPuzzleKey}`, uid)
+  ).then((value) => value === "true");
+}
+
+export async function saveExtraGuessGranted(
+  dailyPuzzleKey: string,
+  uid?: string | null
+): Promise<void> {
+  await AsyncStorage.setItem(
+    userScopedKey(`${EXTRA_GUESS_GRANTED_STORAGE_KEY}:${dailyPuzzleKey}`, uid),
+    "true"
+  );
+}
+
 export async function clearLocalJouzuData(uid?: string | null): Promise<void> {
   const keys = [
     STORAGE_KEY,
     ROMAJI_STORAGE_KEY,
     WORD_MASTERY_STORAGE_KEY,
     PRACTICE_CATEGORY_STORAGE_KEY,
-    DAILY_REMINDERS_STORAGE_KEY
+    DAILY_REMINDERS_STORAGE_KEY,
+    HOW_TO_PLAY_STORAGE_KEY
   ];
 
   if (uid) {
     keys.push(
       userScopedKey(STORAGE_KEY, uid),
       userScopedKey(WORD_MASTERY_STORAGE_KEY, uid),
-      userScopedKey(PRACTICE_CATEGORY_STORAGE_KEY, uid)
+      userScopedKey(PRACTICE_CATEGORY_STORAGE_KEY, uid),
+      userScopedKey(HOW_TO_PLAY_STORAGE_KEY, uid)
     );
   }
 
-  await AsyncStorage.multiRemove(keys);
+  const storedKeys = await AsyncStorage.getAllKeys();
+  const extraGuessKeys = storedKeys.filter(
+    (key) =>
+      key.startsWith(EXTRA_GUESS_GRANTED_STORAGE_KEY) &&
+      (!uid || key.endsWith(`:${uid}`))
+  );
+
+  await AsyncStorage.multiRemove([...keys, ...extraGuessKeys]);
 }

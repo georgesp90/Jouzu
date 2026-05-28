@@ -17,8 +17,10 @@ import { GameGrid } from "@/components/GameGrid";
 import { KanaKeyboard } from "@/components/KanaKeyboard";
 import { ResultModal } from "@/components/ResultModal";
 import { PaywallModal } from "@/components/PaywallModal";
+import { ExtraGuessModal } from "@/components/ExtraGuessModal";
 import { FoundingUserBadge } from "@/components/FoundingUserBadge";
 import { WelcomeLandingScreen } from "@/components/WelcomeLandingScreen";
+import { HowToPlayModal } from "@/components/HowToPlayModal";
 import { acceptedGuesses } from "@/data/acceptedGuesses";
 import { kanaRushWordSet } from "@/data/kanaRushVocabulary";
 import { wordPools } from "@/data/words";
@@ -28,6 +30,7 @@ import {
   deleteCurrentAccount,
   getOrCreateDailyPuzzle,
   getSignedInUserId,
+  getStoredDailyPuzzle,
   getUserStats,
   hasPlayedToday,
   initUserIfNeeded,
@@ -45,11 +48,17 @@ import {
   requestJozuNotificationPermission,
   rescheduleJozuNotifications
 } from "@/notifications/jozuNotifications";
-import { DailyProgress, JLPTLevel, TileStatus, WordEntry, WordMastery } from "@/types/game";
+import { DailyProgress, DailyPuzzle, JLPTLevel, TileStatus, WordEntry, WordMastery } from "@/types/game";
+import { getCategoryLabel, getDailySecondaryHint } from "@/utils/dailyWords";
 import { evaluateGuess } from "@/utils/evaluateGuess";
 import { playInteractionFeedback } from "@/utils/feedback";
 import { getDailyPuzzle } from "@/utils/getDailyPuzzle";
-import { formatPuzzleNumber, getPuzzleNumber, getTodayKey } from "@/utils/getWordOfTheDay";
+import {
+  formatPuzzleNumber,
+  getPreviousDateKey,
+  getPuzzleNumber,
+  getTodayKey
+} from "@/utils/getWordOfTheDay";
 import { MOTION, useReducedMotion } from "@/utils/motion";
 import {
   PlusPlan,
@@ -63,17 +72,27 @@ import {
 import {
   clearLocalJouzuData,
   loadDailyRemindersEnabled,
+  loadExtraGuessGranted,
+  loadHasSeenHowToPlay,
   loadPracticeCategory,
   loadProgress,
   loadShowRomajiPreference,
   loadWordMastery,
   saveDailyRemindersEnabled,
+  saveExtraGuessGranted,
+  saveHasSeenHowToPlay,
   savePracticeCategory,
   saveProgress,
   saveShowRomajiPreference,
   saveWordMastery
 } from "@/utils/storage";
 import { KanaRushScreen } from "@/src/modes/kanaRush/KanaRushScreen";
+import {
+  ExtraGuessProduct,
+  getExtraGuessProduct,
+  isExtraGuessAvailable,
+  purchaseExtraGuess
+} from "@/purchases/extraGuessPurchase";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const KANA_ONLY = /^[\u3040-\u309f]+$/;
@@ -84,14 +103,15 @@ type PracticeCategory = "all" | string;
 
 const PRACTICE_CATEGORY_OPTIONS = [
   { id: "all", label: "All Categories", matches: [] },
-  { id: "verbs", label: "Verbs", matches: ["verb", "action"] },
-  { id: "food", label: "Food", matches: ["food", "drink"] },
-  { id: "travel", label: "Travel", matches: ["travel", "transport"] },
-  { id: "work", label: "Work", matches: ["work"] },
-  { id: "school", label: "School", matches: ["study"] },
-  { id: "places", label: "Places", matches: ["place", "home"] },
-  { id: "emotions", label: "Emotions", matches: ["feeling"] },
-  { id: "adjectives", label: "Adjectives", matches: ["adjective", "description", "color"] }
+  { id: "animals", label: "Animals", matches: ["animals"] },
+  { id: "verbs", label: "Verbs", matches: ["verbs"] },
+  { id: "food", label: "Food & Drinks", matches: ["food", "drinks"] },
+  { id: "travel", label: "Transportation", matches: ["transportation"] },
+  { id: "work", label: "Daily Life", matches: ["daily_life"] },
+  { id: "school", label: "School", matches: ["school"] },
+  { id: "places", label: "Places & Home", matches: ["places", "home"] },
+  { id: "emotions", label: "Emotions", matches: ["emotions"] },
+  { id: "adjectives", label: "Descriptions", matches: ["adjectives", "colors"] }
 ] as const;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -365,6 +385,10 @@ export default function GameScreen() {
   const formattedPuzzleNumber = useMemo(() => formatPuzzleNumber(puzzleNumber), [puzzleNumber]);
   const localDailyPuzzle = useMemo(() => getDailyPuzzle(), []);
   const [dailyPuzzle, setDailyPuzzle] = useState(localDailyPuzzle);
+  const dailyExtraGuessKey = useMemo(
+    () => `${dailyPuzzle.date}:${dailyPuzzle.word.id}`,
+    [dailyPuzzle.date, dailyPuzzle.word.id]
+  );
   const [gameMode, setGameMode] = useState<GameMode>("daily");
   const [selectedJLPTLevel, setSelectedJLPTLevel] = useState<JLPTLevel>("N5");
   const [unlimitedWord, setUnlimitedWord] = useState(() => selectRandomWord("N5"));
@@ -391,6 +415,7 @@ export default function GameScreen() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState("");
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [yesterdayPuzzle, setYesterdayPuzzle] = useState<DailyPuzzle | null>(null);
   const [showRomaji, setShowRomaji] = useState(true);
   const [showDefinitionHint, setShowDefinitionHint] = useState(false);
   const [hintModeEnabled, setHintModeEnabled] = useState(false);
@@ -401,6 +426,7 @@ export default function GameScreen() {
   const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showWelcomeLanding, setShowWelcomeLanding] = useState(true);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("signIn");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -416,13 +442,23 @@ export default function GameScreen() {
   const [dailyRemindersEnabled, setDailyRemindersEnabled] = useState(false);
   const [notificationBusy, setNotificationBusy] = useState(false);
   const [notificationPromptEligible, setNotificationPromptEligible] = useState(false);
+  const [extraGuessGranted, setExtraGuessGranted] = useState(false);
+  const [showExtraGuess, setShowExtraGuess] = useState(false);
+  const [extraGuessProduct, setExtraGuessProduct] = useState<ExtraGuessProduct | null>(null);
+  const [extraGuessProductLoading, setExtraGuessProductLoading] = useState(false);
+  const [extraGuessPurchasing, setExtraGuessPurchasing] = useState(false);
+  const [extraGuessError, setExtraGuessError] = useState<string | null>(null);
   const modeSlide = useRef(new Animated.Value(gameMode === "daily" ? 0 : 1)).current;
   const reviewCardFlip = useRef(new Animated.Value(0)).current;
   const reviewCardRevealingRef = useRef(false);
   const previousUidRef = useRef<string | null>(null);
   const isShortScreen = height < 720;
-  const maxGuesses = getMaxGuesses(answerChars.length);
-  const maxTileSize = maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48;
+  const baseMaxGuesses = getMaxGuesses(answerChars.length);
+  const maxGuesses =
+    gameMode === "daily" && extraGuessGranted ? baseMaxGuesses + 1 : baseMaxGuesses;
+  const tileScale = 1.08;
+  const maxTileSize =
+    (maxGuesses === 4 ? (isShortScreen ? 54 : 62) : isShortScreen ? 42 : 48) * tileScale;
   const baseFixedHeight = showRomaji ? (isShortScreen ? 470 : 500) : isShortScreen ? 430 : 460;
   const estimatedFixedHeight = baseFixedHeight + (gameMode === "unlimited" ? 112 : 0);
   const verticalTileLimit = Math.floor(
@@ -430,7 +466,7 @@ export default function GameScreen() {
   );
   const horizontalTileLimit = Math.floor((width - 72) / answerChars.length);
   const tileSize = Math.max(
-    isShortScreen ? 38 : 42,
+    (isShortScreen ? 38 : 42) * tileScale,
     Math.min(maxTileSize, horizontalTileLimit, verticalTileLimit)
   );
   const isReviewFlashcardMode = gameMode === "unlimited" && reviewWeakOnly;
@@ -469,6 +505,7 @@ export default function GameScreen() {
     setSolved(false);
     setCompleted(false);
     setShowResult(false);
+    setShowExtraGuess(false);
     setShowDefinitionHint(false);
     if (!preserveMasteryFeedback) {
       setMasteryFeedback("");
@@ -538,6 +575,7 @@ export default function GameScreen() {
       setLoading(true);
       setFirebaseUid(user?.uid ?? null);
       setUserStats(null);
+      setYesterdayPuzzle(null);
       setStatsError("");
       setGuesses([]);
       setResults([]);
@@ -545,6 +583,13 @@ export default function GameScreen() {
       setSolved(false);
       setCompleted(false);
       setShowResult(false);
+      setShowExtraGuess(false);
+      setExtraGuessGranted(false);
+      setExtraGuessProduct(null);
+      setExtraGuessProductLoading(false);
+      setExtraGuessPurchasing(false);
+      setExtraGuessError(null);
+      setShowHowToPlay(false);
       setMasteryByWord({});
       setMasteryFeedback("");
       setWordsSolved(0);
@@ -592,13 +637,15 @@ export default function GameScreen() {
           savedShowRomaji,
           savedMastery,
           savedPracticeCategory,
-          savedDailyRemindersEnabled
+          savedDailyRemindersEnabled,
+          hasSeenHowToPlay
         ] = await Promise.all([
           loadProgress(uid),
           loadShowRomajiPreference(),
           loadWordMastery(uid),
           loadPracticeCategory(uid),
-          loadDailyRemindersEnabled()
+          loadDailyRemindersEnabled(),
+          loadHasSeenHowToPlay(uid)
         ]);
         if (!mounted) {
           return;
@@ -612,6 +659,9 @@ export default function GameScreen() {
         }
         setDailyRemindersEnabled(savedDailyRemindersEnabled);
         setMasteryByWord(savedMastery);
+        if (!hasSeenHowToPlay) {
+          setShowHowToPlay(true);
+        }
 
         const syncedDailyPuzzle = uid
           ? await getOrCreateDailyPuzzle(localDailyPuzzle)
@@ -622,14 +672,36 @@ export default function GameScreen() {
           await initUserIfNeeded(uid, auth.currentUser?.email);
         }
 
+        const syncedExtraGuessKey = `${syncedDailyPuzzle.date}:${syncedDailyPuzzle.word.id}`;
+        const restoredExtraGuess = await loadExtraGuessGranted(syncedExtraGuessKey, uid);
+        if (!mounted) {
+          return;
+        }
+
         setDailyPuzzle(syncedDailyPuzzle);
+        setExtraGuessGranted(restoredExtraGuess);
 
         if (saved?.date === todayKey && saved.wordId === syncedDailyPuzzle.word.id) {
+          const awaitingExtraGuessDecision =
+            !saved.completed &&
+            !saved.solved &&
+            !restoredExtraGuess &&
+            saved.guesses.length >= getMaxGuesses(Array.from(syncedDailyPuzzle.word.hiragana).length);
           setGuesses(saved.guesses);
           setResults(saved.results);
           setSolved(saved.solved);
           setCompleted(saved.completed);
           setShowResult(saved.completed);
+          setShowExtraGuess(awaitingExtraGuessDecision);
+          if (awaitingExtraGuessDecision) {
+            setExtraGuessProductLoading(true);
+            const product = await getExtraGuessProduct(uid);
+            if (!mounted) {
+              return;
+            }
+            setExtraGuessProduct(product);
+            setExtraGuessProductLoading(false);
+          }
           setNotificationPromptEligible(saved.completed);
           if (savedDailyRemindersEnabled) {
             void rescheduleJozuNotifications(
@@ -639,6 +711,7 @@ export default function GameScreen() {
         } else if (uid && (await hasPlayedToday(uid, todayKey))) {
           setCompleted(true);
           setShowResult(true);
+          setShowExtraGuess(false);
           setNotificationPromptEligible(true);
           if (savedDailyRemindersEnabled) {
             void rescheduleJozuNotifications(buildNotificationStatsFromProgress({ completedToday: true }));
@@ -880,12 +953,18 @@ export default function GameScreen() {
   );
 
   const incorrectGuessCount = guesses.filter((guess) => guess !== word.hiragana).length;
+  const isDailyMode = gameMode === "daily";
+  const secondaryCategoryHint = isDailyMode ? getDailySecondaryHint(word) : null;
+  const showSecondaryCategoryHint =
+    Boolean(secondaryCategoryHint) && incorrectGuessCount >= 2 && !solved;
+  const showStartsWithHint = isDailyMode && incorrectGuessCount >= 4 && !solved;
   const showEmojiHint = Boolean(word.hintEmoji) && incorrectGuessCount >= 2 && !solved;
+  const automaticDefinitionThreshold = isDailyMode ? 5 : word.hintEmoji ? 3 : 2;
   const showDefinitionTextHint =
-    !solved && (showDefinitionHint || incorrectGuessCount >= (word.hintEmoji ? 3 : 2));
-  const canTapDefinitionHint = hintModeEnabled || incorrectGuessCount >= 2;
+    !solved && (showDefinitionHint || incorrectGuessCount >= automaticDefinitionThreshold);
+  const canTapDefinitionHint = hintModeEnabled || incorrectGuessCount >= (isDailyMode ? 3 : 2);
   const showHintButton = !completed && !showDefinitionTextHint && canTapDefinitionHint;
-  const categoryLabel = `Category: ${word.category}`;
+  const categoryLabel = `Category: ${getCategoryLabel(word.category)}`;
   const reviewFlashcardAnimatedStyle = {
     opacity: reviewCardFlip.interpolate({
       inputRange: [0, 0.82, 1],
@@ -1011,8 +1090,12 @@ export default function GameScreen() {
     setStatsError("");
 
     try {
-      const nextStats = await getUserStats(firebaseUid, todayKey);
+      const [nextStats, previousPuzzle] = await Promise.all([
+        getUserStats(firebaseUid, todayKey),
+        getStoredDailyPuzzle(getPreviousDateKey(todayKey))
+      ]);
       setUserStats(nextStats);
+      setYesterdayPuzzle(previousPuzzle);
       if (dailyRemindersEnabled) {
         void rescheduleJozuNotifications(getNotificationStats(nextStats));
       }
@@ -1201,8 +1284,80 @@ export default function GameScreen() {
     );
   };
 
+  const loadExtraGuessOffer = async () => {
+    setExtraGuessProductLoading(true);
+    setExtraGuessError(null);
+    const product = await getExtraGuessProduct(firebaseUid);
+    setExtraGuessProduct(product);
+    setExtraGuessProductLoading(false);
+  };
+
+  const openExtraGuessOffer = () => {
+    setShowExtraGuess(true);
+    void loadExtraGuessOffer();
+  };
+
+  const finishDailyLossAfterLastChance = async () => {
+    if (gameMode !== "daily" || completed || !showExtraGuess) {
+      return;
+    }
+
+    setShowExtraGuess(false);
+    setCompleted(true);
+    await persistProgress({
+      guesses,
+      results,
+      solved: false,
+      completed: true
+    });
+    setNotificationPromptEligible(true);
+    recordPracticeResult(word, "incorrect");
+    void saveDailyPlayForCurrentUser({
+      date: todayKey,
+      wordId: word.id,
+      won: false,
+      guessesUsed: guesses.length,
+      hintUsed: showDefinitionHint || incorrectGuessCount >= 2
+    }).then(() => {
+      if (dailyRemindersEnabled) {
+        void rescheduleJozuNotifications(getNotificationStats(userStats, true));
+      }
+      if (showStats) {
+        void loadStats();
+      }
+    });
+    setShowResult(true);
+  };
+
+  const handleExtraGuessPurchase = async () => {
+    setExtraGuessPurchasing(true);
+    setExtraGuessError(null);
+
+    const purchaseResult = await purchaseExtraGuess(extraGuessProduct, firebaseUid);
+    setExtraGuessPurchasing(false);
+
+    if (purchaseResult.status === "success") {
+      setExtraGuessGranted(true);
+      setShowExtraGuess(false);
+      try {
+        await saveExtraGuessGranted(dailyExtraGuessKey, firebaseUid);
+      } catch (error) {
+        console.warn("Extra guess grant persistence failed.", error);
+        Alert.alert(
+          "Extra guess ready",
+          "Your extra guess is ready now, but it may not be restored if the app closes."
+        );
+      }
+      return;
+    }
+
+    if (purchaseResult.status !== "cancelled") {
+      setExtraGuessError(purchaseResult.message);
+    }
+  };
+
   const handleKanaPress = (kana: string) => {
-    if (completed || Array.from(currentGuess).length >= answerChars.length) {
+    if (completed || showExtraGuess || Array.from(currentGuess).length >= answerChars.length) {
       return;
     }
 
@@ -1211,7 +1366,7 @@ export default function GameScreen() {
   };
 
   const handleDelete = () => {
-    if (completed) {
+    if (completed || showExtraGuess) {
       return;
     }
 
@@ -1222,6 +1377,10 @@ export default function GameScreen() {
   };
 
   const handleEnter = async () => {
+    if (showExtraGuess) {
+      return;
+    }
+
     if (completed) {
       setShowResult(true);
       return;
@@ -1253,7 +1412,12 @@ export default function GameScreen() {
     const nextGuesses = [...guesses, currentGuess];
     const nextResults = [...results, evaluated];
     const nextSolved = !isCloseAnswer && currentGuess === word.hiragana;
-    const nextCompleted = nextSolved || nextGuesses.length === maxGuesses;
+    const shouldOfferExtraGuess =
+      gameMode === "daily" &&
+      !nextSolved &&
+      !extraGuessGranted &&
+      nextGuesses.length >= baseMaxGuesses;
+    const nextCompleted = nextSolved || (nextGuesses.length === maxGuesses && !shouldOfferExtraGuess);
 
     setGuesses(nextGuesses);
     setResults(nextResults);
@@ -1308,12 +1472,16 @@ export default function GameScreen() {
         {
           text: "OK",
           onPress: () => {
-            if (nextCompleted) {
+            if (shouldOfferExtraGuess) {
+              openExtraGuessOffer();
+            } else if (nextCompleted) {
               setShowResult(true);
             }
           }
         }
       ]);
+    } else if (shouldOfferExtraGuess) {
+      openExtraGuessOffer();
     } else if (nextCompleted) {
       setShowResult(true);
     }
@@ -1337,6 +1505,14 @@ export default function GameScreen() {
   const enterRushFromWelcome = () => {
     setShowWelcomeLanding(false);
     handleGameModeChange("rush");
+  };
+  const closeHowToPlay = () => {
+    setShowHowToPlay(false);
+    void saveHasSeenHowToPlay(true, firebaseUid);
+  };
+  const openHowToPlayFromSettings = () => {
+    setShowSettings(false);
+    setShowHowToPlay(true);
   };
 
   if (authLoading) {
@@ -1426,12 +1602,16 @@ export default function GameScreen() {
 
   if (showWelcomeLanding) {
     return (
-      <WelcomeLandingScreen
-        currentStreak={userStats?.currentStreak}
-        onStartDaily={enterDailyFromWelcome}
-        onStartPractice={enterPracticeFromWelcome}
-        onStartRush={enterRushFromWelcome}
-      />
+      <>
+        <WelcomeLandingScreen
+          currentStreak={userStats?.currentStreak}
+          onStartDaily={enterDailyFromWelcome}
+          onStartPractice={enterPracticeFromWelcome}
+          onStartRush={enterRushFromWelcome}
+          onOpenHowToPlay={() => setShowHowToPlay(true)}
+        />
+        <HowToPlayModal visible={showHowToPlay} onClose={closeHowToPlay} />
+      </>
     );
   }
 
@@ -1523,15 +1703,6 @@ export default function GameScreen() {
 
         {gameMode !== "rush" ? (
           <View style={[styles.header, isShortScreen && styles.shortHeader]}>
-            <Text
-              style={[
-                styles.title,
-                gameMode === "unlimited" && styles.practiceTitle,
-                isShortScreen && styles.shortTitle
-              ]}
-            >
-              {gameMode === "daily" ? "Jozu" : reviewWeakOnly ? "Review Practice" : "Unlimited Practice"}
-            </Text>
             <Text style={styles.kicker}>
               {gameMode === "daily"
                 ? `Daily Hiragana Puzzle #${formattedPuzzleNumber} · ${dailyPuzzle.jlptLevel}`
@@ -1618,6 +1789,20 @@ export default function GameScreen() {
                 {word.hintEmoji}
               </HintLine>
               <HintLine
+                visible={showSecondaryCategoryHint}
+                style={styles.secondaryHintText}
+                reduceMotion={reduceMotion}
+              >
+                {`Hint: ${secondaryCategoryHint}`}
+              </HintLine>
+              <HintLine
+                visible={showStartsWithHint}
+                style={styles.secondaryHintText}
+                reduceMotion={reduceMotion}
+              >
+                {`Starts with ${answerChars[0]}`}
+              </HintLine>
+              <HintLine
                 visible={showDefinitionTextHint}
                 style={styles.definitionHintText}
                 reduceMotion={reduceMotion}
@@ -1651,12 +1836,27 @@ export default function GameScreen() {
               onDelete={handleDelete}
               keyStatuses={keyStatuses}
               showRomaji={showRomaji}
-              disabled={loading}
+              disabled={loading || showExtraGuess}
               compact={isShortScreen || maxGuesses === 6}
             />
           </>
         )}
       </View>
+
+      <ExtraGuessModal
+        visible={showExtraGuess}
+        priceLabel={extraGuessProduct?.priceLabel ?? "$0.99"}
+        productAvailable={isExtraGuessAvailable(extraGuessProduct)}
+        productLoading={extraGuessProductLoading}
+        purchasing={extraGuessPurchasing}
+        error={extraGuessError}
+        onPurchase={() => {
+          void handleExtraGuessPurchase();
+        }}
+        onShowAnswer={() => {
+          void finishDailyLossAfterLastChance();
+        }}
+      />
 
       <ResultModal
         visible={showResult}
@@ -1687,6 +1887,8 @@ export default function GameScreen() {
         onPurchase={handlePlusPurchase}
         onRestore={handleRestorePurchases}
       />
+
+      <HowToPlayModal visible={showHowToPlay} onClose={closeHowToPlay} />
 
       <Modal
         visible={showStats}
@@ -1786,6 +1988,21 @@ export default function GameScreen() {
                     </View>
                   </View>
                 </View>
+
+                {yesterdayPuzzle ? (
+                  <View style={styles.statsSection}>
+                    <Text style={styles.statsSectionTitle}>Yesterday's Word</Text>
+                    <View style={styles.yesterdayWordBox}>
+                      <Text style={styles.yesterdayWordKana}>{yesterdayPuzzle.word.hiragana}</Text>
+                      <Text style={styles.yesterdayWordMeaning}>
+                        {yesterdayPuzzle.word.romaji} · {yesterdayPuzzle.word.english}
+                      </Text>
+                      <Text style={styles.yesterdayWordCategory}>
+                        {`Category: ${getCategoryLabel(yesterdayPuzzle.word.category)}`}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
               </>
             ) : (
               <Text style={styles.statsMessage}>Open your Daily results after signing in.</Text>
@@ -1807,6 +2024,15 @@ export default function GameScreen() {
         <Pressable style={styles.settingsBackdrop} onPress={() => setShowSettings(false)}>
           <Pressable style={styles.settingsMenu} onPress={(event) => event.stopPropagation()}>
             <Text style={styles.settingsTitle}>Settings</Text>
+            <Pressable
+              onPress={openHowToPlayFromSettings}
+              style={styles.helpButton}
+              accessibilityRole="button"
+              accessibilityLabel="Open how to play"
+            >
+              <Text style={styles.helpButtonText}>How to Play</Text>
+              <Text style={styles.helpArrowText}>{"\u2192"}</Text>
+            </Pressable>
             <Text style={styles.settingsLabel}>Display</Text>
             <View
               style={[styles.segmentedControl, styles.settingsSegmentedControl]}
@@ -2370,6 +2596,14 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: "center"
   },
+  secondaryHintText: {
+    maxWidth: 300,
+    color: "#2f4f4a",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    textAlign: "center"
+  },
   hintActions: {
     flexDirection: "row",
     justifyContent: "center",
@@ -2529,6 +2763,31 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 20
   },
+  yesterdayWordBox: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#f7f2ea",
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    gap: 1
+  },
+  yesterdayWordKana: {
+    color: "#25231f",
+    fontSize: 20,
+    fontWeight: "900"
+  },
+  yesterdayWordMeaning: {
+    color: "#5d5448",
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  yesterdayWordCategory: {
+    color: "#817565",
+    fontSize: 11,
+    fontWeight: "800"
+  },
   statsCloseButton: {
     height: 36,
     borderRadius: 8,
@@ -2562,6 +2821,27 @@ const styles = StyleSheet.create({
     color: "#25231f",
     fontSize: 18,
     fontWeight: "900"
+  },
+  helpButton: {
+    height: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ded6ca",
+    backgroundColor: "#f7f2ea",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12
+  },
+  helpButtonText: {
+    color: "#2f4f4a",
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  helpArrowText: {
+    color: "#2f4f4a",
+    fontSize: 16,
+    fontWeight: "800"
   },
   settingsLabel: {
     color: "#817565",

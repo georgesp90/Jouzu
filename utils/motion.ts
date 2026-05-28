@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { AccessibilityInfo, Easing } from "react-native";
 
 export const MOTION = {
-  quick: 90,
-  base: 170,
-  reveal: 240,
-  modal: 190,
-  stagger: 58,
-  popScale: 1.06,
-  pressScale: 0.95,
-  waveLift: -4,
+  quick: 110,
+  base: 180,
+  modal: 220,
+  reveal: 320,
+  stagger: 85,
+  pressScale: 0.94,
+  popScale: 1.08,
+  waveLift: -8,
   easing: Easing.out(Easing.cubic)
 };
 
@@ -22,7 +22,7 @@ export function useReducedMotion() {
     AccessibilityInfo.isReduceMotionEnabled()
       .then((enabled) => {
         if (mounted) {
-          setReduceMotion(Boolean(enabled));
+          setReduceMotion(enabled);
         }
       })
       .catch(() => {

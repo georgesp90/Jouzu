@@ -20,7 +20,7 @@ import { wordPools } from "@/data/words";
 import { auth, db, isFirebaseConfigured } from "@/firebase/firebaseConfig";
 import { DailyPuzzle, JLPTLevel, WordEntry } from "@/types/game";
 
-export const PAYWALL_LAUNCH_DATE = "2026-06-01T04:00:00.000Z";
+export const PAYWALL_LAUNCH_DATE = "2026-07-01T04:00:00.000Z";
 
 export type UserEntitlements = {
   legacyPlus?: boolean;
@@ -383,6 +383,40 @@ export async function getUserStats(uid: string, date: string): Promise<UserStats
   } catch (error) {
     console.warn("Firebase user stats load failed.", error);
     throw error;
+  }
+}
+
+export async function getStoredDailyPuzzle(date: string): Promise<DailyPuzzle | null> {
+  if (!isFirebaseConfigured) {
+    return null;
+  }
+
+  try {
+    const snapshot = await getDoc(doc(db, "dailyPuzzles", date));
+
+    if (!snapshot.exists()) {
+      return null;
+    }
+
+    const storedPuzzle = dailyPuzzleFromSnapshot(snapshot.id, snapshot.data() as DailyPuzzleDoc);
+    const storedWord = storedPuzzle
+      ? Object.values(wordPools)
+          .flat()
+          .find((candidate: WordEntry) => candidate.id === storedPuzzle.wordId)
+      : undefined;
+
+    if (!storedPuzzle || !storedWord) {
+      return null;
+    }
+
+    return {
+      date: storedPuzzle.date,
+      word: storedWord,
+      jlptLevel: storedPuzzle.jlptLevel
+    };
+  } catch (error) {
+    console.warn("Firebase previous daily puzzle load failed.", error);
+    return null;
   }
 }
 

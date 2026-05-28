@@ -36,6 +36,14 @@ export function getTodayKey(date = new Date()): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+export function getPreviousDateKey(date: Date | string = new Date()): string {
+  const todayKey = typeof date === "string" ? date : getTodayKey(date);
+  const [year, month, day] = todayKey.split("-").map(Number);
+  const previousDay = new Date(Date.UTC(year, month - 1, day) - MS_PER_DAY);
+
+  return getTodayKey(previousDay);
+}
+
 export function getPuzzleNumber(date = new Date()): number {
   return Math.max(0, getDayIndex(getTodayKey(date), PUZZLE_NUMBER_START_DATE)) + 1;
 }

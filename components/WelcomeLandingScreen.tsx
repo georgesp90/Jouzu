@@ -7,6 +7,7 @@ type WelcomeLandingScreenProps = {
   onStartDaily: () => void;
   onStartPractice: () => void;
   onStartRush: () => void;
+  onOpenHowToPlay: () => void;
 };
 
 const previewTiles = [
@@ -51,7 +52,8 @@ export function WelcomeLandingScreen({
   currentStreak,
   onStartDaily,
   onStartPractice,
-  onStartRush
+  onStartRush,
+  onOpenHowToPlay
 }: WelcomeLandingScreenProps) {
   const tileReveals = useMemo(
     () => previewTiles.map(() => new Animated.Value(0)),
@@ -153,6 +155,14 @@ export function WelcomeLandingScreen({
             accessibilityLabel="Open Kana Rush"
           >
             <Text style={styles.tertiaryButtonText}>Kana Rush</Text>
+          </Pressable>
+          <Pressable
+            onPress={onOpenHowToPlay}
+            style={styles.howToPlayButton}
+            accessibilityRole="button"
+            accessibilityLabel="Learn how to play Jozu"
+          >
+            <Text style={styles.howToPlayText}>Ready? Learn how to play →</Text>
           </Pressable>
         </View>
 
@@ -333,6 +343,19 @@ const styles = StyleSheet.create({
     color: "#2f4f4a",
     fontSize: 16,
     fontWeight: "900",
+    textAlign: "center"
+  },
+  howToPlayButton: {
+    minHeight: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12
+  },
+  howToPlayText: {
+    color: "#2f4f4a",
+    fontSize: 14,
+    fontWeight: "800",
+    opacity: 0.82,
     textAlign: "center"
   },
   metaBlock: {

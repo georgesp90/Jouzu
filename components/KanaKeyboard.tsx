@@ -332,37 +332,37 @@ const styles = StyleSheet.create({
     gap: 6
   },
   key: {
-    width: 43,
-    height: 44,
+    width: 46,
+    height: 48,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#e9e0d2"
   },
   compactKey: {
-    width: 41,
-    height: 42
+    width: 44,
+    height: 45
   },
   keyKana: {
     color: "#2b2a27",
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
-    lineHeight: 23
+    lineHeight: 25
   },
   compactKeyKana: {
-    fontSize: 19,
-    lineHeight: 21
+    fontSize: 21,
+    lineHeight: 23
   },
   keyRomaji: {
     color: "#2b2a27",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
-    lineHeight: 13,
+    lineHeight: 14,
     opacity: 0.68
   },
   compactKeyRomaji: {
-    fontSize: 11,
-    lineHeight: 12
+    fontSize: 12,
+    lineHeight: 13
   },
   pressedKey: {
     transform: [{ scale: 0.96 }],
@@ -383,20 +383,20 @@ const styles = StyleSheet.create({
     paddingBottom: 0
   },
   actionKey: {
-    minWidth: 116,
-    height: 48,
+    minWidth: 125,
+    height: 52,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#2f4f4a"
   },
   compactActionKey: {
-    height: 46,
-    minWidth: 112
+    height: 50,
+    minWidth: 121
   },
   actionText: {
     color: "#ffffff",
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "800"
   }
 });

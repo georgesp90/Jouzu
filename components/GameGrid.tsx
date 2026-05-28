@@ -16,6 +16,9 @@ type GameGridProps = {
   solved?: boolean;
   reduceMotion?: boolean;
   tileSize?: number;
+  animateSubmittedEmptyTiles?: boolean;
+  revealStartDelay?: number;
+  muteRevealSound?: boolean;
 };
 
 const statusStyles: Record<TileStatus, { backgroundColor: string; borderColor: string; color: string }> = {
@@ -39,6 +42,9 @@ type AnimatedTileProps = {
   shouldPlayWinWave: boolean;
   reduceMotion: boolean;
   activePulse: Animated.Value;
+  animateSubmittedEmptyTiles: boolean;
+  revealStartDelay: number;
+  muteRevealSound: boolean;
 };
 
 function AnimatedTile({
@@ -51,7 +57,10 @@ function AnimatedTile({
   rowResultKey,
   shouldPlayWinWave,
   reduceMotion,
-  activePulse
+  activePulse,
+  animateSubmittedEmptyTiles,
+  revealStartDelay,
+  muteRevealSound
 }: AnimatedTileProps) {
   const popValue = useRef(new Animated.Value(1)).current;
   const flipValue = useRef(new Animated.Value(0)).current;
@@ -59,7 +68,9 @@ function AnimatedTile({
   const previousKanaRef = useRef(kana);
   const previousResultKeyRef = useRef("");
   const previousWinWaveRef = useRef(false);
-  const [revealed, setRevealed] = useState(isCurrentRow || status === "empty");
+  const [revealed, setRevealed] = useState(
+    isCurrentRow || (status === "empty" && !animateSubmittedEmptyTiles)
+  );
 
   useEffect(() => {
     if (!isCurrentRow || !kana || previousKanaRef.current === kana) {
@@ -91,7 +102,7 @@ function AnimatedTile({
   }, [isCurrentRow, kana, popValue, reduceMotion]);
 
   useEffect(() => {
-    if (isCurrentRow || status === "empty") {
+    if (isCurrentRow || (status === "empty" && !animateSubmittedEmptyTiles)) {
       setRevealed(true);
       flipValue.setValue(1);
       previousResultKeyRef.current = rowResultKey;
@@ -111,10 +122,12 @@ function AnimatedTile({
 
     setRevealed(false);
     flipValue.setValue(0);
-    const revealDelay = columnIndex * MOTION.stagger;
-    const soundTimer = setTimeout(() => {
-      void playFeedbackSound("reveal");
-    }, revealDelay);
+    const revealDelay = revealStartDelay + columnIndex * MOTION.stagger;
+    const soundTimer = muteRevealSound
+      ? undefined
+      : setTimeout(() => {
+          void playFeedbackSound("reveal");
+        }, revealDelay);
     const revealTimer = setTimeout(() => setRevealed(true), revealDelay + MOTION.reveal / 2);
 
     Animated.timing(flipValue, {
@@ -126,10 +139,23 @@ function AnimatedTile({
     }).start();
 
     return () => {
-      clearTimeout(soundTimer);
+      if (soundTimer) {
+        clearTimeout(soundTimer);
+      }
       clearTimeout(revealTimer);
     };
-  }, [columnIndex, flipValue, isCurrentRow, reduceMotion, revealed, rowResultKey, status]);
+  }, [
+    animateSubmittedEmptyTiles,
+    columnIndex,
+    flipValue,
+    isCurrentRow,
+    muteRevealSound,
+    reduceMotion,
+    revealStartDelay,
+    revealed,
+    rowResultKey,
+    status
+  ]);
 
   useEffect(() => {
     if (!shouldPlayWinWave || reduceMotion) {
@@ -178,6 +204,12 @@ function AnimatedTile({
     inputRange: [0, 1],
     outputRange: [1, 1.03]
   });
+  const kanaFontSize = Math.round(tileSize * 0.48);
+  const kanaLineHeight = Math.round(tileSize * 0.54);
+  const smallKanaFontSize = Math.round(tileSize * 0.36);
+  const smallKanaLineHeight = Math.round(tileSize * 0.43);
+  const romajiFontSize = Math.max(11, Math.round(tileSize * 0.21));
+  const romajiLineHeight = Math.max(13, Math.round(tileSize * 0.25));
   const activeOpacity = activePulse.interpolate({
     inputRange: [0, 1],
     outputRange: [0.18, 0.46]
@@ -209,6 +241,10 @@ function AnimatedTile({
       <Text
         style={[
           styles.tileKana,
+          {
+            fontSize: isSmallKana ? smallKanaFontSize : kanaFontSize,
+            lineHeight: isSmallKana ? smallKanaLineHeight : kanaLineHeight
+          },
           isSmallKana && styles.smallKana,
           { color: colors.color }
         ]}
@@ -216,7 +252,14 @@ function AnimatedTile({
         {kana}
       </Text>
       {showRomaji && romaji ? (
-        <Text style={[styles.tileRomaji, { color: colors.color }]}>{romaji}</Text>
+        <Text
+          style={[
+            styles.tileRomaji,
+            { color: colors.color, fontSize: romajiFontSize, lineHeight: romajiLineHeight }
+          ]}
+        >
+          {romaji}
+        </Text>
       ) : null}
     </Animated.View>
   );
@@ -232,7 +275,10 @@ export function GameGrid({
   shakeTrigger,
   solved = false,
   reduceMotion = false,
-  tileSize = 56
+  tileSize = 56,
+  animateSubmittedEmptyTiles = false,
+  revealStartDelay = 0,
+  muteRevealSound = false
 }: GameGridProps) {
   const shakeValue = useRef(new Animated.Value(0)).current;
   const activePulse = useRef(new Animated.Value(0)).current;
@@ -319,6 +365,9 @@ export function GameGrid({
                   shouldPlayWinWave={shouldPlayWinWave}
                   reduceMotion={reduceMotion}
                   activePulse={activePulse}
+                  animateSubmittedEmptyTiles={animateSubmittedEmptyTiles}
+                  revealStartDelay={revealStartDelay}
+                  muteRevealSound={muteRevealSound}
                 />
               );
             })}
@@ -354,19 +403,13 @@ const styles = StyleSheet.create({
     borderRadius: 7
   },
   tileKana: {
-    fontSize: 27,
-    fontWeight: "700",
-    lineHeight: 30
+    fontWeight: "700"
   },
   smallKana: {
-    fontSize: 20,
-    lineHeight: 24,
     transform: [{ translateY: 2 }]
   },
   tileRomaji: {
-    fontSize: 12,
     fontWeight: "700",
-    lineHeight: 14,
     opacity: 0.82
   }
 });

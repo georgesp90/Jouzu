@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Modal, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { TileStatus, WordEntry } from "@/types/game";
+import { getCategoryLabel } from "@/utils/dailyWords";
 import { formatPuzzleNumber } from "@/utils/getWordOfTheDay";
 import { MOTION, useReducedMotion } from "@/utils/motion";
 import { speakJapanese, stopSpeech } from "@/utils/speech";
@@ -72,7 +73,7 @@ const categoryEmoji: Record<string, string> = {
 
 function formatCategoryChip(category: string): string {
   const emoji = categoryEmoji[category.toLowerCase()];
-  return `${emoji ? `${emoji} ` : ""}${titleCase(category)}`;
+  return `${emoji ? `${emoji} ` : ""}${getCategoryLabel(category)}`;
 }
 
 function buildShareText(
@@ -88,7 +89,7 @@ function buildShareText(
   const rows = results.map((row) => row.map((status) => resultEmoji[status]).join("")).join("\n");
 
   return `Jozu Hiragana #${formattedPuzzleNumber} ${score}
-🌸 ${titleCase(word.category)}
+🌸 ${getCategoryLabel(word.category)}
 
 ${rows}
 
@@ -334,7 +335,7 @@ export function ResultModal({
               </>
             ) : (
               <>
-                <Text style={styles.infoText}>Category: {titleCase(word.category)}</Text>
+                <Text style={styles.infoText}>Category: {getCategoryLabel(word.category)}</Text>
                 <Text style={styles.infoText}>JLPT: {word.jlpt}</Text>
                 <Text style={styles.infoText}>
                   Definition: {word.refinedDefinition ?? word.definition}
