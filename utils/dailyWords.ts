@@ -72,10 +72,5 @@ export function getDailySecondaryHint(word: WordEntry): string | null {
     return getCategoryLabel(word.subcategory);
   }
 
-  const definition = word.refinedDefinition ?? word.definition;
-  if (!definition) {
-    return null;
-  }
-
-  return definition.length > 54 ? `${definition.slice(0, 51).trim()}...` : definition;
+  return null;
 }

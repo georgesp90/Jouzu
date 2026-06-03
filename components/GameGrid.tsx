@@ -208,8 +208,8 @@ function AnimatedTile({
   const kanaLineHeight = Math.round(tileSize * 0.54);
   const smallKanaFontSize = Math.round(tileSize * 0.36);
   const smallKanaLineHeight = Math.round(tileSize * 0.43);
-  const romajiFontSize = Math.max(11, Math.round(tileSize * 0.21));
-  const romajiLineHeight = Math.max(13, Math.round(tileSize * 0.25));
+  const romajiFontSize = Math.max(9, Math.round(tileSize * 0.16));
+  const romajiLineHeight = Math.round(romajiFontSize * 1.08);
   const activeOpacity = activePulse.interpolate({
     inputRange: [0, 1],
     outputRange: [0.18, 0.46]
@@ -255,7 +255,12 @@ function AnimatedTile({
         <Text
           style={[
             styles.tileRomaji,
-            { color: colors.color, fontSize: romajiFontSize, lineHeight: romajiLineHeight }
+            {
+              color: colors.color,
+              fontSize: romajiFontSize,
+              lineHeight: romajiLineHeight,
+              paddingRight: Math.round(tileSize * 0.08)
+            }
           ]}
         >
           {romaji}
@@ -410,6 +415,8 @@ const styles = StyleSheet.create({
   },
   tileRomaji: {
     fontWeight: "700",
-    opacity: 0.82
+    opacity: 0.66,
+    alignSelf: "stretch",
+    textAlign: "right"
   }
 });

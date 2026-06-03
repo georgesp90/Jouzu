@@ -173,7 +173,7 @@ function formatStatValue(value: number): string {
 }
 
 function getMaxGuesses(answerLength: number): number {
-  return answerLength === 2 ? 4 : 6;
+  return answerLength === 2 ? 4 : 5;
 }
 
 function getMasteryLevel(masteryByWord: Record<string, WordMastery>, wordId: string): number {
@@ -1812,12 +1812,18 @@ export default function GameScreen() {
               {showHintButton || gameMode === "unlimited" ? (
                 <View style={styles.hintActions}>
                   {showHintButton ? (
-                    <Pressable onPress={() => setShowDefinitionHint(true)} style={styles.hintButton}>
+                    <Pressable
+                      onPress={() => setShowDefinitionHint(true)}
+                      style={({ pressed }) => [styles.hintButton, pressed && styles.hintButtonPressed]}
+                    >
                       <Text style={styles.hintButtonText}>Hint</Text>
                     </Pressable>
                   ) : null}
                   {gameMode === "unlimited" ? (
-                    <Pressable onPress={skipUnlimitedWord} style={styles.hintButton}>
+                    <Pressable
+                      onPress={skipUnlimitedWord}
+                      style={({ pressed }) => [styles.hintButton, pressed && styles.hintButtonPressed]}
+                    >
                       <Text style={styles.hintButtonText}>New Word</Text>
                     </Pressable>
                   ) : null}
@@ -1837,7 +1843,7 @@ export default function GameScreen() {
               keyStatuses={keyStatuses}
               showRomaji={showRomaji}
               disabled={loading || showExtraGuess}
-              compact={isShortScreen || maxGuesses === 6}
+              compact={isShortScreen || maxGuesses >= 5}
             />
           </>
         )}
@@ -2614,13 +2620,26 @@ const styles = StyleSheet.create({
   hintButton: {
     minWidth: 108,
     height: 34,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#cbbfad",
+    borderColor: "#d6ccbd",
+    borderBottomWidth: 3,
+    borderBottomColor: "#c1b5a4",
     backgroundColor: "#fffdf8",
-    paddingHorizontal: 14
+    paddingHorizontal: 14,
+    shadowColor: "#b8ac9b",
+    shadowOpacity: 0.22,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2
+  },
+  hintButtonPressed: {
+    borderBottomWidth: 1,
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    transform: [{ translateY: 2 }]
   },
   hintButtonText: {
     color: "#2f4f4a",
