@@ -1,7 +1,7 @@
 import { KanaRushPosition, KanaRushSubmission, KanaRushTile } from "./types";
 import { getWeightedRandomKana } from "./kanaWeights";
 
-export const KANA_RUSH_SIZE = 8;
+export const KANA_RUSH_SIZE = 6;
 export const KANA_RUSH_START_SECONDS = 30;
 export const KANA_RUSH_BOARD_THRESHOLDS: Record<number, number> = {
   8: 12,
@@ -12,15 +12,15 @@ export const KANA_RUSH_BOARD_THRESHOLDS: Record<number, number> = {
 
 export function getKanaRushBoardSizeForTime(seconds: number): number {
   if (seconds <= 5) {
-    return 5;
+    return Math.min(KANA_RUSH_SIZE, 5);
   }
 
   if (seconds <= 12) {
-    return 6;
+    return Math.min(KANA_RUSH_SIZE, 6);
   }
 
   if (seconds <= 20) {
-    return 7;
+    return Math.min(KANA_RUSH_SIZE, 7);
   }
 
   return KANA_RUSH_SIZE;

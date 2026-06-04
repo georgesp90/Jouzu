@@ -449,6 +449,7 @@ export default function GameScreen() {
   const [extraGuessPurchasing, setExtraGuessPurchasing] = useState(false);
   const [extraGuessError, setExtraGuessError] = useState<string | null>(null);
   const modeSlide = useRef(new Animated.Value(gameMode === "daily" ? 0 : 1)).current;
+  const modeContentEntrance = useRef(new Animated.Value(1)).current;
   const reviewCardFlip = useRef(new Animated.Value(0)).current;
   const reviewCardRevealingRef = useRef(false);
   const previousUidRef = useRef<string | null>(null);
@@ -1033,6 +1034,25 @@ export default function GameScreen() {
     }).start();
   }, [gameMode, modeSlide, reduceMotion]);
 
+  useEffect(() => {
+    if (gameMode === "rush") {
+      return;
+    }
+
+    if (reduceMotion) {
+      modeContentEntrance.setValue(1);
+      return;
+    }
+
+    modeContentEntrance.setValue(0);
+    Animated.timing(modeContentEntrance, {
+      toValue: 1,
+      duration: MOTION.base,
+      easing: MOTION.easing,
+      useNativeDriver: true
+    }).start();
+  }, [gameMode, modeContentEntrance, reduceMotion]);
+
   const keyStatuses = useMemo(() => {
     const priority: Record<TileStatus, number> = {
       empty: 0,
@@ -1494,6 +1514,23 @@ export default function GameScreen() {
     inputRange: [0, 1, 2],
     outputRange: [0, 78, 156]
   });
+  const modeContentEntranceStyle = {
+    opacity: modeContentEntrance,
+    transform: [
+      {
+        translateY: modeContentEntrance.interpolate({
+          inputRange: [0, 1],
+          outputRange: [12, 0]
+        })
+      },
+      {
+        scale: modeContentEntrance.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.99, 1]
+        })
+      }
+    ]
+  };
   const enterDailyFromWelcome = () => {
     setShowWelcomeLanding(false);
     handleGameModeChange("daily");
@@ -1702,6 +1739,7 @@ export default function GameScreen() {
         </View>
 
         {gameMode !== "rush" ? (
+          <Animated.View style={[styles.modeContent, modeContentEntranceStyle]}>
           <View style={[styles.header, isShortScreen && styles.shortHeader]}>
             <Text style={styles.kicker}>
               {gameMode === "daily"
@@ -1713,7 +1751,6 @@ export default function GameScreen() {
                   : `${activePracticeCategoryLabel} · ${word.jlpt}`}
             </Text>
           </View>
-        ) : null}
 
         {gameMode === "unlimited" ? (
           <View style={styles.practicePanel}>
@@ -1727,9 +1764,7 @@ export default function GameScreen() {
           </View>
         ) : null}
 
-        {gameMode === "rush" ? (
-          <KanaRushScreen acceptedWords={kanaRushWordSet} />
-        ) : isReviewFlashcardMode && !hasReviewWordsForActiveCategory ? (
+        {isReviewFlashcardMode && !hasReviewWordsForActiveCategory ? (
           <View style={styles.flashcard}>
             <Text style={styles.flashcardIcon}>📝</Text>
             <Text style={styles.flashcardTitle}>{hasReviewWords ? "No Cards Here" : "All Clear"}</Text>
@@ -1846,6 +1881,10 @@ export default function GameScreen() {
               compact={isShortScreen || maxGuesses >= 5}
             />
           </>
+        )}
+          </Animated.View>
+        ) : (
+          <KanaRushScreen acceptedWords={kanaRushWordSet} />
         )}
       </View>
 
@@ -2207,6 +2246,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 8,
     paddingBottom: 4
+  },
+  modeContent: {
+    width: "100%",
+    alignItems: "center",
+    gap: 7
   },
   shortContainer: {
     gap: 4,

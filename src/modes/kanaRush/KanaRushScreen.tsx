@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Easing,
   PanResponder,
   Pressable,
   StyleSheet,
@@ -30,7 +31,8 @@ type KanaRushScreenProps = {
   acceptedWords: Set<string>;
 };
 
-const TILE_GAP = 5;
+const BOARD_PADDING = 8;
+const TILE_GAP = 7;
 const TILE_TOUCH_RADIUS_MULTIPLIER = 0.78;
 const PATH_LINE_WIDTH = 9;
 const COMBO_WINDOW_MS = 2500;
@@ -101,10 +103,10 @@ function getPositionFromPoint({
   return { row, col };
 }
 
-function getTileCenter(position: KanaRushPosition, tileSize: number) {
+function getTileCenter(position: KanaRushPosition, tileSize: number, inset = 0) {
   return {
-    x: position.col * (tileSize + TILE_GAP) + tileSize / 2,
-    y: position.row * (tileSize + TILE_GAP) + tileSize / 2
+    x: inset + position.col * (tileSize + TILE_GAP) + tileSize / 2,
+    y: inset + position.row * (tileSize + TILE_GAP) + tileSize / 2
   };
 }
 
@@ -150,7 +152,8 @@ function getVisibleStarterHintKeys(
 
 export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
   const { width } = useWindowDimensions();
-  const gridSize = Math.min(width - 36, 356);
+  const boardFrameSize = Math.min(width - 36, 356);
+  const gridSize = boardFrameSize - BOARD_PADDING * 2;
   const trie = useMemo(() => buildKanaTrie(acceptedWords), [acceptedWords]);
   const [phase, setPhase] = useState<RushPhase>("idle");
   const [boardSize, setBoardSize] = useState(KANA_RUSH_SIZE);
@@ -192,6 +195,7 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
   const submitPulse = useRef(new Animated.Value(0)).current;
   const timerWarning = useRef(new Animated.Value(0)).current;
   const gridScale = useRef(new Animated.Value(1)).current;
+  const screenEntrance = useRef(new Animated.Value(0)).current;
 
   const selectedKeys = useMemo(() => new Set(path.map((position) => positionKey(position))), [path]);
   const starterPaths = useMemo(
@@ -211,6 +215,23 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
   const latestWordMeaning = latestWord ? kanaRushWordMeta.get(latestWord)?.english : undefined;
   const timeProgress = Math.max(0, Math.min(1, timeLeft / KANA_RUSH_START_SECONDS));
   const comboText = `×${combo}`;
+  const screenEntranceStyle = {
+    opacity: screenEntrance,
+    transform: [
+      {
+        translateY: screenEntrance.interpolate({
+          inputRange: [0, 1],
+          outputRange: [14, 0]
+        })
+      },
+      {
+        scale: screenEntrance.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.985, 1]
+        })
+      }
+    ]
+  };
   const timerWarningStyle = {
     transform: [
       {
@@ -320,6 +341,16 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
     },
     []
   );
+
+  useEffect(() => {
+    screenEntrance.setValue(0);
+    Animated.timing(screenEntrance, {
+      toValue: 1,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true
+    }).start();
+  }, [screenEntrance]);
 
   useEffect(() => {
     if (phase !== "playing" || roundEnded) {
@@ -667,8 +698,8 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
         onMoveShouldSetPanResponder: () => phase === "playing" && !roundEnded,
         onPanResponderGrant: (event) => {
           const position = getPositionFromPoint({
-            x: event.nativeEvent.locationX,
-            y: event.nativeEvent.locationY,
+            x: event.nativeEvent.locationX - BOARD_PADDING,
+            y: event.nativeEvent.locationY - BOARD_PADDING,
             gridSize,
             boardSize,
             tileSize
@@ -679,8 +710,8 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
         onPanResponderMove: (event) => {
           addPositionToPath(
             getPositionFromPoint({
-              x: event.nativeEvent.locationX,
-              y: event.nativeEvent.locationY,
+              x: event.nativeEvent.locationX - BOARD_PADDING,
+              y: event.nativeEvent.locationY - BOARD_PADDING,
               gridSize,
               boardSize,
               tileSize
@@ -697,7 +728,7 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
     const recentWords = foundWords.slice(0, 5);
 
     return (
-      <View style={styles.screen}>
+      <Animated.View style={[styles.screen, screenEntranceStyle]}>
         <View style={styles.hero}>
           <Text style={styles.title}>Kana Rush</Text>
           <Text style={styles.subtitle}>Swipe kana. Find words. Beat the clock.</Text>
@@ -737,12 +768,12 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
           <Text style={styles.playAgainText}>Play Again</Text>
         </Pressable>
         </View>
-      </View>
+      </Animated.View>
     );
   }
 
   return (
-    <View style={styles.screen}>
+    <Animated.View style={[styles.screen, screenEntranceStyle]}>
       <View style={styles.hero}>
         <Text style={styles.title}>Kana Rush</Text>
         <Text style={styles.subtitle}>Swipe kana. Find words. Beat the clock.</Text>
@@ -768,14 +799,14 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
       </View>
 
       <Animated.View
-        style={[styles.grid, { width: gridSize, height: gridSize, transform: [{ scale: gridScale }] }]}
+        style={[styles.grid, { width: boardFrameSize, height: boardFrameSize, transform: [{ scale: gridScale }] }]}
         {...panResponder.panHandlers}
       >
         <Animated.View pointerEvents="none" style={[styles.validFlash, { opacity: validFlash }]} />
         {path.slice(1).map((position, index) => {
           const previousPosition = path[index];
-          const start = getTileCenter(previousPosition, tileSize);
-          const end = getTileCenter(position, tileSize);
+          const start = getTileCenter(previousPosition, tileSize, BOARD_PADDING);
+          const end = getTileCenter(position, tileSize, BOARD_PADDING);
           const deltaX = end.x - start.x;
           const deltaY = end.y - start.y;
           const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -813,6 +844,9 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
               : replaced
                 ? 1.04
                 : 1;
+            const tileRadius = Math.round(tileSize * 0.18);
+            const kanaFontSize = Math.round(tileSize * 0.42);
+            const romajiFontSize = Math.max(8, Math.round(tileSize * 0.16));
 
             return (
               <Animated.View
@@ -823,8 +857,9 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
                   {
                     width: tileSize,
                     height: tileSize,
-                    left: col * (tileSize + TILE_GAP),
-                    top: row * (tileSize + TILE_GAP),
+                    borderRadius: tileRadius,
+                    left: BOARD_PADDING + col * (tileSize + TILE_GAP),
+                    top: BOARD_PADDING + row * (tileSize + TILE_GAP),
                     transform: [{ scale: tileScale }]
                   },
                   replaced && styles.replacedTile,
@@ -836,8 +871,28 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
                   firstSelected && styles.firstSelectedTile
                 ]}
               >
-                <Text style={[styles.tileText, selected && styles.selectedTileText]}>{tile.kana}</Text>
-                <Text style={[styles.tileRomaji, selected && styles.selectedTileText]}>{getKanaRomaji(tile.kana)}</Text>
+                <Text
+                  style={[
+                    styles.tileText,
+                    { fontSize: kanaFontSize, lineHeight: Math.round(kanaFontSize * 1.08) },
+                    selected && styles.selectedTileText
+                  ]}
+                >
+                  {tile.kana}
+                </Text>
+                <Text
+                  style={[
+                    styles.tileRomaji,
+                    {
+                      fontSize: romajiFontSize,
+                      lineHeight: Math.round(romajiFontSize * 1.08),
+                      paddingRight: Math.round(tileSize * 0.08)
+                    },
+                    selected && styles.selectedTileText
+                  ]}
+                >
+                  {getKanaRomaji(tile.kana)}
+                </Text>
               </Animated.View>
             );
           })
@@ -875,7 +930,7 @@ export function KanaRushScreen({ acceptedWords }: KanaRushScreenProps) {
           </View>
         </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -916,21 +971,26 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    minHeight: 66,
-    borderRadius: 12,
+    minHeight: 70,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: "#ded6ca",
-    backgroundColor: "#fbf6ec",
+    borderColor: "#d6ccbd",
+    borderTopColor: "#f8f1e6",
+    borderBottomWidth: 4,
+    borderBottomColor: "#c1b5a4",
+    backgroundColor: "#efe7da",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#2b2a27",
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowColor: "#b8ac9b",
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 1
+    elevation: 2
   },
   warningStatPill: {
     borderColor: "#9b3d35",
+    borderTopColor: "#fff8f4",
+    borderBottomColor: "#8f6a62",
     backgroundColor: "#fff4ef"
   },
   statLabel: {
@@ -993,20 +1053,28 @@ const styles = StyleSheet.create({
   },
   tile: {
     position: "absolute",
-    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#ded6ca",
-    backgroundColor: "#efe6d7",
+    borderColor: "#d6ccbd",
+    borderBottomWidth: 2,
+    borderBottomColor: "#c1b5a4",
+    backgroundColor: "#efe7da",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#b8ac9b",
+    shadowOpacity: 0.28,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
     zIndex: 3
   },
   replacedTile: {
     borderColor: "#4f8f62",
+    borderBottomColor: "#3d7651",
     backgroundColor: "#f2ead9"
   },
   starterHintTile: {
     borderColor: "#4f8f62",
+    borderBottomColor: "#3d7651",
     borderWidth: 2,
     shadowColor: "#4f8f62",
     shadowOpacity: 0.24,
@@ -1016,6 +1084,7 @@ const styles = StyleSheet.create({
   },
   nextStarterHintTile: {
     borderColor: "rgba(79, 143, 98, 0.5)",
+    borderBottomColor: "rgba(79, 143, 98, 0.55)",
     backgroundColor: "#f1eadc",
     shadowColor: "#4f8f62",
     shadowOpacity: 0.1,
@@ -1025,6 +1094,7 @@ const styles = StyleSheet.create({
   },
   selectedTile: {
     borderColor: "#2f4f4a",
+    borderBottomColor: "#1f3934",
     backgroundColor: "#2f4f4a",
     shadowColor: "#2f4f4a",
     shadowOpacity: 0.38,
@@ -1035,6 +1105,7 @@ const styles = StyleSheet.create({
   },
   validReleaseTile: {
     borderColor: "#4f8f62",
+    borderBottomColor: "#3d7651",
     backgroundColor: "#4f8f62",
     shadowColor: "#4f8f62",
     shadowOpacity: 0.34,
@@ -1042,6 +1113,7 @@ const styles = StyleSheet.create({
   },
   invalidReleaseTile: {
     borderColor: "#9b6f64",
+    borderBottomColor: "#5d625f",
     backgroundColor: "#7b817d",
     shadowColor: "#9b6f64",
     shadowOpacity: 0.16,
@@ -1057,16 +1129,15 @@ const styles = StyleSheet.create({
   },
   tileText: {
     color: "#25231f",
-    fontSize: 21,
-    fontWeight: "900",
-    lineHeight: 24
+    fontWeight: "900"
   },
   tileRomaji: {
-    color: "#817565",
-    fontSize: 10,
-    fontWeight: "900",
-    lineHeight: 12,
-    marginTop: -1
+    alignSelf: "stretch",
+    color: "#25231f",
+    fontWeight: "800",
+    marginTop: -1,
+    opacity: 0.62,
+    textAlign: "right"
   },
   selectedTileText: {
     color: "#ffffff"
@@ -1075,15 +1146,20 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 356,
     height: 58,
-    borderRadius: 12,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "#2f4f4a",
+    borderTopColor: "#47716a",
+    borderBottomWidth: 5,
+    borderBottomColor: "#1f3934",
     backgroundColor: "#2f4f4a",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#2f4f4a",
-    shadowOpacity: 0.16,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2
+    shadowColor: "#1f3934",
+    shadowOpacity: 0.24,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3
   },
   startButtonText: {
     color: "#ffffff",
@@ -1155,7 +1231,7 @@ const styles = StyleSheet.create({
   endCard: {
     width: "100%",
     maxWidth: 356,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: "#ded6ca",
     backgroundColor: "#fffdf8",
@@ -1188,12 +1264,19 @@ const styles = StyleSheet.create({
   },
   endStat: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: "#ded6ca",
-    backgroundColor: "#f7f2ea",
+    borderColor: "#d6ccbd",
+    borderBottomWidth: 4,
+    borderBottomColor: "#c1b5a4",
+    backgroundColor: "#efe7da",
     alignItems: "center",
-    paddingVertical: 12
+    paddingVertical: 12,
+    shadowColor: "#b8ac9b",
+    shadowOpacity: 0.2,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2
   },
   endStatValue: {
     color: "#2f4f4a",
@@ -1213,13 +1296,20 @@ const styles = StyleSheet.create({
   },
   recentWords: {
     width: "100%",
-    borderRadius: 12,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: "#ded6ca",
-    backgroundColor: "#fbf6ec",
+    borderColor: "#d6ccbd",
+    borderBottomWidth: 4,
+    borderBottomColor: "#c1b5a4",
+    backgroundColor: "#efe7da",
     gap: 5,
     paddingHorizontal: 14,
-    paddingVertical: 12
+    paddingVertical: 12,
+    shadowColor: "#b8ac9b",
+    shadowOpacity: 0.18,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2
   },
   recentWordsTitle: {
     color: "#817565",
@@ -1237,11 +1327,20 @@ const styles = StyleSheet.create({
   },
   playAgainButton: {
     width: "100%",
-    height: 54,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "#2f4f4a",
+    borderBottomWidth: 5,
+    borderBottomColor: "#1f3934",
     backgroundColor: "#2f4f4a",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    shadowColor: "#1f3934",
+    shadowOpacity: 0.24,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3
   },
   playAgainText: {
     color: "#ffffff",
