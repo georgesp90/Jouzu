@@ -5,6 +5,7 @@ import {
   Modal,
   PanResponder,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -470,6 +471,15 @@ export default function GameScreen() {
     (isShortScreen ? 38 : 42) * tileScale,
     Math.min(maxTileSize, horizontalTileLimit, verticalTileLimit)
   );
+  const hasScrollableExtraGuessBoard =
+    gameMode === "daily" && extraGuessGranted && maxGuesses > baseMaxGuesses;
+  const boardRowGap = 8;
+  const baseBoardHeight = baseMaxGuesses * tileSize + (baseMaxGuesses - 1) * boardRowGap;
+  const fullBoardHeight = maxGuesses * tileSize + (maxGuesses - 1) * boardRowGap;
+  const boardScrollMaxHeight = hasScrollableExtraGuessBoard
+    ? Math.min(fullBoardHeight, baseBoardHeight + 10)
+    : undefined;
+  const boardScrollRef = useRef<ScrollView | null>(null);
   const isReviewFlashcardMode = gameMode === "unlimited" && reviewWeakOnly;
   const reviewWords = useMemo(() => getReviewWords(masteryByWord), [masteryByWord]);
   const wordsById = useMemo(() => {
@@ -1052,6 +1062,18 @@ export default function GameScreen() {
       useNativeDriver: true
     }).start();
   }, [gameMode, modeContentEntrance, reduceMotion]);
+
+  useEffect(() => {
+    if (!hasScrollableExtraGuessBoard) {
+      return;
+    }
+
+    const scrollTimer = setTimeout(() => {
+      boardScrollRef.current?.scrollToEnd({ animated: !reduceMotion });
+    }, 80);
+
+    return () => clearTimeout(scrollTimer);
+  }, [guesses.length, hasScrollableExtraGuessBoard, reduceMotion]);
 
   const keyStatuses = useMemo(() => {
     const priority: Record<TileStatus, number> = {
@@ -1797,18 +1819,41 @@ export default function GameScreen() {
           </AnimatedPressable>
         ) : (
           <>
-            <GameGrid
-              answerLength={answerChars.length}
-              maxGuesses={maxGuesses}
-              guesses={guesses}
-              currentGuess={currentGuess}
-              results={results}
-              showRomaji={showRomaji}
-              shakeTrigger={shakeTrigger}
-              solved={solved}
-              reduceMotion={reduceMotion}
-              tileSize={tileSize}
-            />
+            {hasScrollableExtraGuessBoard ? (
+              <ScrollView
+                ref={boardScrollRef}
+                style={[styles.boardScrollFrame, { maxHeight: boardScrollMaxHeight }]}
+                contentContainerStyle={styles.boardScrollContent}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
+                <GameGrid
+                  answerLength={answerChars.length}
+                  maxGuesses={maxGuesses}
+                  guesses={guesses}
+                  currentGuess={currentGuess}
+                  results={results}
+                  showRomaji={showRomaji}
+                  shakeTrigger={shakeTrigger}
+                  solved={solved}
+                  reduceMotion={reduceMotion}
+                  tileSize={tileSize}
+                />
+              </ScrollView>
+            ) : (
+              <GameGrid
+                answerLength={answerChars.length}
+                maxGuesses={maxGuesses}
+                guesses={guesses}
+                currentGuess={currentGuess}
+                results={results}
+                showRomaji={showRomaji}
+                shakeTrigger={shakeTrigger}
+                solved={solved}
+                reduceMotion={reduceMotion}
+                tileSize={tileSize}
+              />
+            )}
 
             <View style={[styles.hintBox, isShortScreen && styles.shortHintBox]}>
               <Text style={styles.categoryText}>{categoryLabel}</Text>
@@ -2251,6 +2296,13 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     gap: 7
+  },
+  boardScrollFrame: {
+    width: "100%"
+  },
+  boardScrollContent: {
+    alignItems: "center",
+    paddingVertical: 1
   },
   shortContainer: {
     gap: 4,
